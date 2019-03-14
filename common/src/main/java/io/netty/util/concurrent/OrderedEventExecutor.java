@@ -16,6 +16,10 @@
 package io.netty.util.concurrent;
 
 /**
+ * 这是一个标记接口。
+ *
+ * 它的作用是标记它的所有子类 按照有序(串行)的方式处理所有提交的任务。
+ *
  * Marker interface for {@link EventExecutor}s that will process all submitted tasks in an ordered / serial fashion.
  */
 public interface OrderedEventExecutor extends EventExecutor {

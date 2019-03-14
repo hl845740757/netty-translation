@@ -28,15 +28,33 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * {@link EventExecutor}的抽象实现。
+ * 它继承了{@link AbstractExecutorService}，并实现了{@link EventExecutor}。
+ * 融合了两者的语义 => AbstractEventExecutor 是一个处理事件的ExecutorService
+ *
  * Abstract base class for {@link EventExecutor} implementations.
  */
 public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractEventExecutor.class);
 
+    /**
+     * 默认的关闭前的安静期 2S
+     */
     static final long DEFAULT_SHUTDOWN_QUIET_PERIOD = 2;
+    /**
+     * 默认的等待关闭超时的时间， 15秒
+     */
     static final long DEFAULT_SHUTDOWN_TIMEOUT = 15;
 
+    /**
+     * 父节点的引用
+     * 我是一个EventExecutor，是EventExecutorGroup中的一员(是它的子节点)。
+     *
+     */
     private final EventExecutorGroup parent;
+    /**
+     * 封装一个只包含自己的集合。方便实现跌打查询等等。
+     */
     private final Collection<EventExecutor> selfCollection = Collections.<EventExecutor>singleton(this);
 
     protected AbstractEventExecutor() {
@@ -54,6 +72,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
 
     @Override
     public EventExecutor next() {
+        // 因为 EventExecutor 是叶子节点，是没有子节点的，因此请求的事件处理器都是自己
         return this;
     }
 

@@ -41,6 +41,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 为每一个Channel创建一个独立的{@link EventLoop}的{@link EventLoopGroup}
+ * 因为可能导致创建大量的线程，不推荐使用了。在下一个大的版本中删除。
+ * 因此这里面的方法不做解释
+ *
  * An {@link EventLoopGroup} that creates one {@link EventLoop} per {@link Channel}.
  *
  * @deprecated this will be remove in the next-major release.

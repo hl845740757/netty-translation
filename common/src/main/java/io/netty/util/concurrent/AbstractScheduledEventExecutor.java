@@ -26,10 +26,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 继承AbstractEventExecutor，对它的含义进一步具体化。支持事件的调度处理。
+ * 实现 {@link java.util.concurrent.ScheduledExecutorService}。
+ *
  * Abstract base class for {@link EventExecutor}s that want to support scheduling.
  */
 public abstract class AbstractScheduledEventExecutor extends AbstractEventExecutor {
-
+    /**
+     * 默认的任务比较器
+     */
     private static final Comparator<ScheduledFutureTask<?>> SCHEDULED_FUTURE_TASK_COMPARATOR =
             new Comparator<ScheduledFutureTask<?>>() {
                 @Override
@@ -38,6 +43,9 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
                 }
             };
 
+    /**
+     * 调度的任务队列
+     */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue;
 
     protected AbstractScheduledEventExecutor() {
@@ -47,10 +55,15 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         super(parent);
     }
 
+    // 获取过去的纳秒数
     protected static long nanoTime() {
         return ScheduledFutureTask.nanoTime();
     }
 
+    /**
+     * 获取默认的
+     * @return
+     */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue() {
         if (scheduledTaskQueue == null) {
             scheduledTaskQueue = new DefaultPriorityQueue<ScheduledFutureTask<?>>(
@@ -66,6 +79,9 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
+     * 取消当前线程的所有任务。
+     * (必须保证当前线程是EventExecutor中的线程)
+     *
      * Cancel all scheduled tasks.
      *
      * This method MUST be called only when {@link #inEventLoop()} is {@code true}.
@@ -88,6 +104,8 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
+     * 弹出一个已提交的任务
+     *
      * @see #pollScheduledTask(long)
      */
     protected final Runnable pollScheduledTask() {
