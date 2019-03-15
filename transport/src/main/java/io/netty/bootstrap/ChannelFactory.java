@@ -18,6 +18,8 @@ package io.netty.bootstrap;
 import io.netty.channel.Channel;
 
 /**
+ * 请使用@link io.netty.channel.ChannelFactory}
+ * 该工厂不再被使用
  * @deprecated Use {@link io.netty.channel.ChannelFactory} instead.
  */
 @Deprecated

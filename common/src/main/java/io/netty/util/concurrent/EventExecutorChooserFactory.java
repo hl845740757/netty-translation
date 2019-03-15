@@ -18,6 +18,9 @@ package io.netty.util.concurrent;
 import io.netty.util.internal.UnstableApi;
 
 /**
+ * EventExecutorChooser工厂。
+ * 负责创建EventExecutor的选择器。
+ *
  * Factory that creates new {@link EventExecutorChooser}s.
  */
 @UnstableApi
@@ -29,6 +32,9 @@ public interface EventExecutorChooserFactory {
     EventExecutorChooser newChooser(EventExecutor[] executors);
 
     /**
+     * 当调用{@link EventExecutorGroup#next()}的时候，由 Chooser负责真正的选择。
+     * 主要是实现Executor的负载均衡
+     * 是一种策略模式(或者说桥接模式)的运用
      * Chooses the next {@link EventExecutor} to use.
      */
     @UnstableApi

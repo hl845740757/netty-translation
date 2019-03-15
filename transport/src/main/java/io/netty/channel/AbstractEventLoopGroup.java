@@ -19,6 +19,7 @@ package io.netty.channel;
 import io.netty.util.concurrent.AbstractEventExecutorGroup;
 
 /**
+ * 这条继承线目前是废弃的
  * Skeletal implementation of {@link EventLoopGroup}.
  */
 public abstract class AbstractEventLoopGroup extends AbstractEventExecutorGroup implements EventLoopGroup {

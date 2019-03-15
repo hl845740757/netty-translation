@@ -16,7 +16,7 @@
 package io.netty.util.concurrent;
 
 /**
- * 事件执行器，
+ * 事件执行器，它是一种特殊的Executor,其作用就是主处理事件。
  *
  * {@link EventExecutor}是一个特殊的{@link EventExecutorGroup}。
  * 它附带了一些简单方法去查看一个线程是否在一个EventLoop中。

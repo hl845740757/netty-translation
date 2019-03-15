@@ -41,6 +41,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
+ * {@link AbstractBootstrap}是一个使得引导{@link Channel}更加轻松的辅助类。
+ * 它支持方法链的方式提供了一个简单的方式去配置自身({@link AbstractBootstrap}).
+ *
+ * 该类的方法都服务于与它关联的{@link Channel}
+ *
  * {@link AbstractBootstrap} is a helper class that makes it easy to bootstrap a {@link Channel}. It support
  * method-chaining to provide an easy way to configure the {@link AbstractBootstrap}.
  *
@@ -75,6 +80,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
+     * 为将要创建的Channel绑定{@link EventLoopGroup},该EventLoopGroup会出来该Channel的所有IO事件。
+     *
      * The {@link EventLoopGroup} which is used to handle all the events for the to-be-created
      * {@link Channel}
      */
@@ -89,12 +96,21 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         return self();
     }
 
+    /**
+     * 通过泛型的方式转换为具体的子类型
+     * @return
+     */
     @SuppressWarnings("unchecked")
     private B self() {
         return (B) this;
     }
 
     /**
+     * 通过给定的 {@link Class}创建具体的channel示例对象。
+     *
+     * 如果你的Channel实现没有无参的构造方法，你也可以使用{@link #channelFactory(io.netty.channel.ChannelFactory)}
+     * 去创建示例。
+     *
      * The {@link Class} which is used to create {@link Channel} instances from.
      * You either use this or {@link #channelFactory(io.netty.channel.ChannelFactory)} if your
      * {@link Channel} implementation has no no-args constructor.
@@ -107,6 +123,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
+     * 该方法不再被推荐使用(因为ChannelFactory将移动到另一个包)。
      * @deprecated Use {@link #channelFactory(io.netty.channel.ChannelFactory)} instead.
      */
     @Deprecated
@@ -117,12 +134,16 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         if (this.channelFactory != null) {
             throw new IllegalStateException("channelFactory set already");
         }
-
+        // 设置好channelFactory
         this.channelFactory = channelFactory;
         return self();
     }
 
     /**
+     * channelFactory用于在调用{@link #bind()}方法时创建{@link Channel}实例。
+     * 该方法通常只用于当{@link #channel(Class)}无法解决你的问题的时候，由于你有一些更加复杂的需求时。
+     * 当你的{@link Channel}实现有一个无参的构造方法时，高度推荐使用{@link #channel(Class)}去简化你的代码。
+     *
      * {@link io.netty.channel.ChannelFactory} which is used to create {@link Channel} instances from
      * when calling {@link #bind()}. This method is usually only used if {@link #channel(Class)}
      * is not working for you because of some more complex needs. If your {@link Channel} implementation
@@ -204,6 +225,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
+     * 验证所有的参数，子类可以覆盖它，在这种情况下必须调用super的方法。(应该定义成模板方法)
      * Validate all the parameters. Sub-classes may override this, but should
      * call the super method in that case.
      */
@@ -227,17 +249,22 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     public abstract B clone();
 
     /**
+     * 创建一个Channel，并且注册到EventLoop上。(该类有一个 EventLoopGroup 和 一个Channel)
      * Create a new {@link Channel} and register it with an {@link EventLoop}.
      */
     public ChannelFuture register() {
+        // 验证参数
         validate();
+        // 初始化channel，并注册到EventLoopGroup中的一个EventLoop上
         return initAndRegister();
     }
 
     /**
+     * 创建一个{@link Channel}并且绑定在它上面。
      * Create a new {@link Channel} and bind it.
      */
     public ChannelFuture bind() {
+        // 验证所有的参数，说实话该类用了大量的volatile，以及锁，先检查后执行似乎存在静态条件。
         validate();
         SocketAddress localAddress = this.localAddress;
         if (localAddress == null) {
@@ -268,6 +295,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
+     * 创建一个
      * Create a new {@link Channel} and bind it.
      */
     public ChannelFuture bind(SocketAddress localAddress) {
@@ -314,10 +342,18 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         }
     }
 
+    /**
+     *
+     *
+     * 这里调用{@link #init(Channel)}的方式就是模板方法
+     * @return
+     */
     final ChannelFuture initAndRegister() {
         Channel channel = null;
         try {
+            // 利用channel工厂创建channel(默认的是反射channel)
             channel = channelFactory.newChannel();
+            // 初始化channel的属性
             init(channel);
         } catch (Throwable t) {
             if (channel != null) {
@@ -351,6 +387,11 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
         return regFuture;
     }
 
+    /**
+     * 初始化与该 BootStrap相关的channel
+     * @param channel
+     * @throws Exception
+     */
     abstract void init(Channel channel) throws Exception;
 
     private static void doBind0(
@@ -372,6 +413,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
+     * 设置服务当前Channel的{@link ChannelHandler}
+     *
      * the {@link ChannelHandler} to use for serving the requests.
      */
     public B handler(ChannelHandler handler) {

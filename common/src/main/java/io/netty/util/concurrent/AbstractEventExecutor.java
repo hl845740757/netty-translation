@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
  * 它继承了{@link AbstractExecutorService}，并实现了{@link EventExecutor}。
  * 融合了两者的语义 => AbstractEventExecutor 是一个处理事件的ExecutorService
  *
+ * 它是叶子节点的顶层超类
+ *
  * Abstract base class for {@link EventExecutor} implementations.
  */
 public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {

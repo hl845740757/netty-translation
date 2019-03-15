@@ -20,6 +20,8 @@ import io.netty.util.internal.UnstableApi;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 使用简单轮询方式分配EventExecutor的默认Chooser工厂实现
+ *
  * Default implementation which uses simple round-robin to choose next {@link EventExecutor}.
  */
 @UnstableApi
@@ -43,6 +45,10 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
         return (val & -val) == val;
     }
 
+    /**
+     * 当EventExecutor的数量是2的整幂次时，可以使用 & 运算提高计算效率。
+     * 简单轮询的方式进行EventExecutor的负载均衡
+     */
     private static final class PowerOfTwoEventExecutorChooser implements EventExecutorChooser {
         private final AtomicInteger idx = new AtomicInteger();
         private final EventExecutor[] executors;
@@ -57,6 +63,10 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
         }
     }
 
+    /**
+     * 通用的EventExecutor选择器，取余操作计算索引。
+     * 简单轮询的方式进行EventExecutor的负载均衡
+     */
     private static final class GenericEventExecutorChooser implements EventExecutorChooser {
         private final AtomicInteger idx = new AtomicInteger();
         private final EventExecutor[] executors;

@@ -20,6 +20,7 @@ import io.netty.channel.ServerChannel;
 import java.net.InetSocketAddress;
 
 /**
+ * 一个TCP/IP的{@link ServerChannel}，它会接收到来的TCP/IP连接。
  * A TCP/IP {@link ServerChannel} which accepts incoming TCP/IP connections.
  */
 public interface ServerSocketChannel extends ServerChannel {
@@ -27,6 +28,11 @@ public interface ServerSocketChannel extends ServerChannel {
     ServerSocketChannelConfig config();
     @Override
     InetSocketAddress localAddress();
+
+    /**
+     * 获取远程地址，因为它仅仅是监听的channel，因此没有远程地址才对
+     * @return
+     */
     @Override
     InetSocketAddress remoteAddress();
 }

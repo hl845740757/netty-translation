@@ -51,6 +51,9 @@ import java.util.concurrent.Executor;
 import static io.netty.channel.internal.ChannelUtils.MAX_BYTES_PER_GATHERING_WRITE_ATTEMPTED_LOW_THRESHOLD;
 
 /**
+ * {@link NioSocketChannel} 是 使用NIO Selector的基本SocketChannel实现。
+ * 它用于接收新的连接。
+ *
  * {@link io.netty.channel.socket.SocketChannel} which uses NIO selector based implementation.
  */
 public class NioSocketChannel extends AbstractNioByteChannel implements io.netty.channel.socket.SocketChannel {
@@ -60,6 +63,11 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
     private static SocketChannel newSocket(SelectorProvider provider) {
         try {
             /**
+             * 使用{@link SelectorProvider#openSocketChannel()} 创建{@link SocketChannel}，
+             * 这样能够移除每一次{@link SocketChannel#open()}方法调用{@link SelectorProvider#provider()}带来的竞争条件。
+             *
+             * 因为{@link SelectorProvider#provider()}是加锁的，且锁的是静态对象(全局锁)。
+             *
              *  Use the {@link SelectorProvider} to open {@link SocketChannel} and so remove condition in
              *  {@link SelectorProvider#provider()} which is called by each SocketChannel.open() otherwise.
              *
@@ -74,6 +82,7 @@ public class NioSocketChannel extends AbstractNioByteChannel implements io.netty
     private final SocketChannelConfig config;
 
     /**
+     * 反射工厂默认调用该构造方法创建NIOSocketChannel实例。
      * Create a new instance
      */
     public NioSocketChannel() {

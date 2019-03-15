@@ -19,10 +19,17 @@ package io.netty.util.concurrent;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 一个{@link Future}的骨架(模板)实现，它表示该 {@link Future}早已执行完毕。
+ *
+ * 它的方法都比较简单，不做详细的解释了。
+ *
  * A skeletal {@link Future} implementation which represents a {@link Future} which has been completed already.
  */
 public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
+    /**
+     * 与该Future关联的EventExecutor
+     */
     private final EventExecutor executor;
 
     /**
@@ -41,6 +48,11 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
         return executor;
     }
 
+    /**
+     * 由于早已执行完毕，因此加入时就通知执行完毕，而不用存储起来
+     * @param listener
+     * @return
+     */
     @Override
     public Future<V> addListener(GenericFutureListener<? extends Future<? super V>> listener) {
         if (listener == null) {
@@ -64,6 +76,11 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
         return this;
     }
 
+    /**
+     * 由于早已执行完毕，添加时并没有真正添加，因此不需要移除
+     * @param listener
+     * @return
+     */
     @Override
     public Future<V> removeListener(GenericFutureListener<? extends Future<? super V>> listener) {
         // NOOP
@@ -76,6 +93,11 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
         return this;
     }
 
+    /**
+     * 由于早已执行完毕，不需要等待
+     * @return
+     * @throws InterruptedException
+     */
     @Override
     public Future<V> await() throws InterruptedException {
         if (Thread.interrupted()) {
@@ -92,6 +114,11 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
         return true;
     }
 
+    /**
+     * 由于早已执行完毕，不需要同步操作，直接返回
+     * @return
+     * @throws InterruptedException
+     */
     @Override
     public Future<V> sync() throws InterruptedException {
         return this;

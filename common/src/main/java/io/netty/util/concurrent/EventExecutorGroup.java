@@ -23,6 +23,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * EventExecutorGroup是事件执行器组，同时是是一种特殊的支持任务调度的执行服务。
  *
  * {@link EventExecutorGroup} 有两个作用：
  * 1.通过它的 {@link #next()} 方法提供 {@link EventExecutor}
@@ -49,8 +50,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     /**
      * 查询{@link EventExecutorGroup}是否处于正在关闭状态。
      *
-     * 如果该{@link EventExecutorGroup}管理的所有{@link EventExecutor}正在 {@linkplain #shutdownGracefully()} 或 {@linkplain #isShutdown()}
-     * 状态，则返回true。
+     * 如果该{@link EventExecutorGroup}管理的所有{@link EventExecutor}正在优雅的关闭或已关闭则返回true
      *
      * Returns {@code true} if and only if all {@link EventExecutor}s managed by this {@link EventExecutorGroup}
      * are being {@linkplain #shutdownGracefully() shut down gracefully} or was {@linkplain #isShutdown() shut down}.
@@ -90,6 +90,9 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit);
 
     /**
+     * Future模式
+     * 返回的{@link Future}会在该Group管理的所有{@link EventExecutor}终止后收到一个通知
+     *
      * Returns the {@link Future} which is notified when all {@link EventExecutor}s managed by this
      * {@link EventExecutorGroup} have been terminated.
      */

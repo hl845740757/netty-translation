@@ -163,8 +163,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     private SelectorTuple openSelector() {
         final Selector unwrappedSelector;
-        unwrappedSelector = provider.openSelector();
         try {
+            unwrappedSelector = provider.openSelector();
         } catch (IOException e) {
             throw new ChannelException("failed to open a new selector", e);
         }

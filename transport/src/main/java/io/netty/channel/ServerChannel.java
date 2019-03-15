@@ -18,10 +18,15 @@ package io.netty.channel;
 import io.netty.channel.socket.ServerSocketChannel;
 
 /**
+ * {@link ServerChannel}是一个{@link Channel}，
+ * 它会尝试去接收到来的链接，并通过接收它们创建它的子连接(与客户端真正连接的channel)。
+ * {@link ServerSocketChannel}是一个很好的例子。
+ *
  * A {@link Channel} that accepts an incoming connection attempt and creates
  * its child {@link Channel}s by accepting them.  {@link ServerSocketChannel} is
  * a good example.
  */
 public interface ServerChannel extends Channel {
+    // 该接口没有方法，因此它是一个标记接口。表示它的实现应该遵循约定。
     // This is a tag interface.
 }

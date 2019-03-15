@@ -43,7 +43,10 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * 单线程的
+ * 单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
+ *
+ * 相对的是{@link MultithreadEventExecutorGroup}
+ *
  * Abstract base class for {@link OrderedEventExecutor}'s that execute all its submitted tasks in a single thread.
  *
  */

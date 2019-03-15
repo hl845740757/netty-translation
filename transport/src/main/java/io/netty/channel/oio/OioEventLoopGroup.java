@@ -28,6 +28,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
+ * Old IO 事件处理器组。建议使用新的 NIO/EPOLL/KQUEUE 方式传输数据
+ *
+ * 已过期，不再详细翻译。
  * {@link EventLoopGroup} which is used to handle OIO {@link Channel}'s. Each {@link Channel} will be handled by its
  * own {@link EventLoop} to not block others.
  *

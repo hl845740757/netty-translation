@@ -37,6 +37,9 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * {@link ServerBootstrap} 是{@link AbstractBootstrap}的一个子类
+ * 它运行轻松的引导{@link ServerChannel}
+ *
  * {@link Bootstrap} sub-class which allows easy bootstrap of {@link ServerChannel}
  *
  */
@@ -47,6 +50,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     private final Map<ChannelOption<?>, Object> childOptions = new LinkedHashMap<ChannelOption<?>, Object>();
     private final Map<AttributeKey<?>, Object> childAttrs = new LinkedHashMap<AttributeKey<?>, Object>();
     private final ServerBootstrapConfig config = new ServerBootstrapConfig(this);
+
     private volatile EventLoopGroup childGroup;
     private volatile ChannelHandler childHandler;
 
@@ -65,6 +69,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
+     * 为parent (acceptor) 和the child (client)指定{@link EventLoopGroup}，
+     * 该{@link EventLoopGroup}将会处理parent 和 child的所有IO事件。
+     * 为了性能考虑，不建议使用一个EventLoopGroup处理parent 和 child 的所有的IO事件。
+     * 建议使用： {@link #group(EventLoopGroup, EventLoopGroup)}
      * Specify the {@link EventLoopGroup} which is used for the parent (acceptor) and the child (client).
      */
     @Override
@@ -73,6 +81,10 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
+     * 为parent(acceptor) 和 child(client)设置他们的 EventLoopGroup。
+     * parentGroup用于处理{@link ServerChannel}的所有IO事件，
+     * childGroup用于处理所有与客户端相连的{@link Channel}的IO事件。
+     *
      * Set the {@link EventLoopGroup} for the parent (acceptor) and the child (client). These
      * {@link EventLoopGroup}'s are used to handle all the events and IO for {@link ServerChannel} and
      * {@link Channel}'s.
@@ -127,6 +139,9 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
     }
 
     /**
+     * 设置用于服务{@link Channel}请求的{@link ChannelHandler}.
+     *
+     *
      * Set the {@link ChannelHandler} which is used to serve the request for the {@link Channel}'s.
      */
     public ServerBootstrap childHandler(ChannelHandler childHandler) {
