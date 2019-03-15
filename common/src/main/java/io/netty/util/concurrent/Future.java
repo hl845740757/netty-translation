@@ -20,7 +20,19 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
+ * Future通常代表的是异步、支持取消、获取执行结果的任务的凭证。
+ *
+ * Future模式，简单的Future模式是没有回调的，如JDK的Future。无回调的Future简单安全，没有线程安全问题。
+ * Future模式也可以提供回调机制，提供回调的话，是存在线程安全问题的，因此监听器的实现呢一定要保证线程安全；
+ * 此外，由于添加了回调，如果某一个回调方法执行时间过长或阻塞，或抛出异常等都将威胁到系统的安全性(如：其它监听者丢失信号)
+ *
+ *  怎么设计以及使用都需要仔细斟酌,毕竟有得必有失。
+ * (简单一般容易保证安全性，对开发者要求不高。便捷的方法往往潜在着危险，对开发者素质要求较高。)
+ *
+ * Netty对JDK的Future进行了扩展，添加了事件完成的回调机制。Netty也推荐大家使用回调机制监听计算的完成事件。
+ *
  * The result of an asynchronous operation.
+ *
  */
 @SuppressWarnings("ClassNameSameAsAncestorName")
 public interface Future<V> extends java.util.concurrent.Future<V> {
@@ -47,6 +59,9 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
     Throwable cause();
 
     /**
+     * 添加一个监听者到当前Future。传入的特定的Listener将会在Future计算完成时(isDown)被通知。
+     * 如果当前Future已经计算完成，那么将立即被通知。
+     *
      * Adds the specified listener to this future.  The
      * specified listener is notified when this future is
      * {@linkplain #isDone() done}.  If this future is already
@@ -63,6 +78,7 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
     Future<V> addListeners(GenericFutureListener<? extends Future<? super V>>... listeners);
 
     /**
+     * 从该Future中移除第一个出现的特定的Listener(传入的Listener)
      * Removes the first occurrence of the specified listener from this future.
      * The specified listener is no longer notified when this
      * future is {@linkplain #isDone() done}.  If the specified
@@ -81,18 +97,28 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
     Future<V> removeListeners(GenericFutureListener<? extends Future<? super V>>... listeners);
 
     /**
+     * 等待 直到当前Future计算完成 或者 当前Future由于已经失败重新抛出异常。其实相当于get,换了个语法糖
+     * 返回的是自己。
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
      */
     Future<V> sync() throws InterruptedException;
 
     /**
+     * 在等待计算完成之前，不响应中断(应该就是内部捕获中断，在返回之前恢复中断状态)
+     *
+     * 中断是针对线程的，即使任务可以处理中断，在返回之前也应该恢复线程的中断状态，使得线程的拥有者可以处理中断。
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
      */
     Future<V> syncUninterruptibly();
 
     /**
+     * 等待当前Future计算完成。
+     * 有{@link #sync()}方法为啥还要await()方法呢？
+     *
+     * await()不会查询任务的结果,在任务完成之后就返回。而 sync()方法会在任务失败的情况下抛出异常。
+     *
      * Waits for this future to be completed.
      *
      * @throws InterruptedException
@@ -152,6 +178,10 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
     boolean awaitUninterruptibly(long timeoutMillis);
 
     /**
+     * 尝试非阻塞的获取结果，如果Future的计算没有完成的话，那么将会返回null。
+     *
+     * (一般是获取一下保护结果的锁，查询结果立即返回，或者是volatile变量。) Netty采用的是volatile。
+     *
      * Return the result without blocking. If the future is not done yet this will return {@code null}.
      *
      * As it is possible that a {@code null} value is used to mark the future as successful you also need to check

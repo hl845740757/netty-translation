@@ -32,7 +32,7 @@ public class DefaultChannelPromise extends DefaultPromise<Void> implements Chann
     private final Channel channel;
     private long checkpoint;
 
-    /**
+    /** 
      * Creates a new instance.
      *
      * @param channel

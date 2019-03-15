@@ -54,6 +54,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      */
     private Object listeners;
     /**
+     * 在当前对象上等待的线程数。这些线程请求持有当前对象的监视器以使用 wait()/notifyAll() 进行通信.
+     *
      * Threading - synchronized(this). We are required to hold the monitor to use Java's underlying wait()/notifyAll().
      */
     private short waiters;
