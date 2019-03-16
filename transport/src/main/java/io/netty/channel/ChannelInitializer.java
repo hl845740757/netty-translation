@@ -26,8 +26,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * 一个特殊的Channel入站处理器。
+ * 一旦channel注册到它的EventLooop上，ChannelInitializer提供了一个简单的方式去初始化channel。
+ *
  * A special {@link ChannelInboundHandler} which offers an easy way to initialize a {@link Channel} once it was
  * registered to its {@link EventLoop}.
+ *
  *
  * Implementations are most often used in the context of {@link Bootstrap#handler(ChannelHandler)} ,
  * {@link ServerBootstrap#handler(ChannelHandler)} and {@link ServerBootstrap#childHandler(ChannelHandler)} to
@@ -60,13 +64,19 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
             new ConcurrentHashMap<ChannelHandlerContext, Boolean>());
 
     /**
+     * 当channel注册到它的EventLoop的时候，该方法会被调用一次。
+     * 且在方法返回之后，该ChannelInitializer实例将会出 {@link Channel}的 {@link ChannelPipeline}中移除。
+     *
      * This method will be called once the {@link Channel} was registered. After the method returns this instance
      * will be removed from the {@link ChannelPipeline} of the {@link Channel}.
      *
      * @param ch            the {@link Channel} which was registered.
+     *                      当前注册到EventLoop的channel
      * @throws Exception    is thrown if an error occurs. In that case it will be handled by
      *                      {@link #exceptionCaught(ChannelHandlerContext, Throwable)} which will by default close
      *                      the {@link Channel}.
+     *                      一旦抛出异常，那么将会被{@link #exceptionCaught(ChannelHandlerContext, Throwable)}方法处理，
+     *                      它仅仅是默认的关闭channel。
      */
     protected abstract void initChannel(C ch) throws Exception;
 
@@ -133,6 +143,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
                 exceptionCaught(ctx, cause);
             } finally {
                 ChannelPipeline pipeline = ctx.pipeline();
+                // 移除自身的context(handler被包装在ChannelHandlerContext中)
                 if (pipeline.context(this) != null) {
                     pipeline.remove(this);
                 }

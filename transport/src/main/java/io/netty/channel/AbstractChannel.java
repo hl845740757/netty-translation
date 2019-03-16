@@ -469,6 +469,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 promise.setFailure(new IllegalStateException("registered to an event loop already"));
                 return;
             }
+            // 不兼容的EventLoop
             if (!isCompatible(eventLoop)) {
                 promise.setFailure(
                         new IllegalStateException("incompatible event loop type: " + eventLoop.getClass().getName()));
@@ -476,7 +477,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             AbstractChannel.this.eventLoop = eventLoop;
-
+            // 当前线程是否是EventLoop中的线程
             if (eventLoop.inEventLoop()) {
                 register0(promise);
             } else {
@@ -1075,6 +1076,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     }
 
     /**
+     * 如果给定的{@link EventLoop}是兼容的则返回True.
      * Return {@code true} if the given {@link EventLoop} is compatible with this instance.
      */
     protected abstract boolean isCompatible(EventLoop loop);

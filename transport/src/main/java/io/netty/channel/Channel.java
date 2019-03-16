@@ -178,6 +178,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
     Unsafe unsafe();
 
     /**
+     * 返回赋值给channel的 Pipeline
      * Return the assigned {@link ChannelPipeline}.
      */
     ChannelPipeline pipeline();

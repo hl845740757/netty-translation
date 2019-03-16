@@ -120,7 +120,7 @@ import java.util.concurrent.TimeUnit;
  *
  * {@link ChannelHandler}中的事件处理方法一般在IO线程中调用，如果事件处理时调用了{@link #await()}，
  * 也就是被IO线程调用，那么等待的IO操作可能永远不会完成，因为{@link #await()}会阻塞IO它等待的IO操作，
- * 也就造成了死锁。
+ * 也就造成了死锁。(因为Channel在生命周期内只绑定一个线程上，它的所有IO操作只由绑定的线程处理)
  * <p>
  * The event handler methods in {@link ChannelHandler} are usually called by
  * an I/O thread.  If {@link #await()} is called by an event handler
@@ -149,6 +149,10 @@ import java.util.concurrent.TimeUnit;
  *     });
  * }
  * </pre>
+ *
+ * 尽管存在上述的一些危险，但是肯定存在某些情况使用await()方法更加方便。在这样的一种情况下，
+ * 清确保你没有在IO线程中调用await()方法。否则将会抛出一个{@link BlockingOperationException}异常以
+ * 防止死锁。
  * <p>
  * In spite of the disadvantages mentioned above, there are certainly the cases
  * where it is more convenient to call {@link #await()}. In such a case, please
@@ -157,6 +161,13 @@ import java.util.concurrent.TimeUnit;
  *
  * <h3>Do not confuse I/O timeout and await timeout</h3>
  *
+ * {@link #await(long)}、{@link #await(long, TimeUnit)}, {@link #awaitUninterruptibly(long)}、
+ * {@link #awaitUninterruptibly(long, TimeUnit)}，这些await方法中的超时时间和 IO操作超时一点关系都没有。
+ * (!!! 你的等待操作和本身的IO操作之间一点关系都没有)
+ *
+ * 和上面的图描述的一样，如果IO操作超时，Future将被标记为失败。举个栗子：
+ * 连接超时时间应该通过指定的传输参数设置。
+ *
  * The timeout value you specify with {@link #await(long)},
  * {@link #await(long, TimeUnit)}, {@link #awaitUninterruptibly(long)}, or
  * {@link #awaitUninterruptibly(long, TimeUnit)} are not related with I/O
@@ -164,10 +175,12 @@ import java.util.concurrent.TimeUnit;
  * 'completed with failure,' as depicted in the diagram above.  For example,
  * connect timeout should be configured via a transport-specific option:
  * <pre>
- * // BAD - NEVER DO THIS
+ * // BAD - NEVER DO THIS 错误的示例，永远不要这样做
  * {@link Bootstrap} b = ...;
  * {@link ChannelFuture} f = b.connect(...);
+ * // 这里的超时仅仅是你等待结果的超时时间，不代表建立链接的超时时间。你等待超时并不会影响连接操作本身。
  * f.awaitUninterruptibly(10, TimeUnit.SECONDS);
+ * // 在这里是无法确定IO操作的状态的(Future可能仍处理未完成状态)
  * if (f.isCancelled()) {
  *     // Connection attempt cancelled by user
  * } else if (!f.isSuccess()) {
@@ -181,11 +194,12 @@ import java.util.concurrent.TimeUnit;
  * // GOOD
  * {@link Bootstrap} b = ...;
  * // Configure the connect timeout option.
+ * // 通过参数设置建立连接的超时时间
  * <b>b.option({@link ChannelOption}.CONNECT_TIMEOUT_MILLIS, 10000);</b>
  * {@link ChannelFuture} f = b.connect(...);
  * f.awaitUninterruptibly();
  *
- * // Now we are sure the future is completed.
+ * // Now we are sure the future is completed. 在这里我们能确定future已经进入了完成状态
  * assert f.isDone();
  *
  * if (f.isCancelled()) {
@@ -200,6 +214,8 @@ import java.util.concurrent.TimeUnit;
 public interface ChannelFuture extends Future<Void> {
 
     /**
+     * 返回与该Future关联的IO操作的Channel
+     *
      * Returns a channel where the I/O operation associated with this
      * future takes place.
      */
@@ -232,6 +248,10 @@ public interface ChannelFuture extends Future<Void> {
     ChannelFuture awaitUninterruptibly();
 
     /**
+     * 如果该方法返回true.
+     * 那么不允许调用以下的方法：
+     * (为啥没有返回值不让调用以下方法呢？讲道理没有返回值我也可以监听)
+     *
      * Returns {@code true} if this {@link ChannelFuture} is a void future and so not allow to call any of the
      * following methods:
      * <ul>

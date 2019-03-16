@@ -299,20 +299,27 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      * Create a new {@link Channel} and bind it.
      */
     public ChannelFuture bind(SocketAddress localAddress) {
+        // 验证所有参数
         validate();
         if (localAddress == null) {
             throw new NullPointerException("localAddress");
         }
+        // 执行真正的绑定犯法
         return doBind(localAddress);
     }
 
+    /**
+     * 执行真正的绑定方法
+     * @param localAddress
+     * @return
+     */
     private ChannelFuture doBind(final SocketAddress localAddress) {
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
+        // 注册失败
         if (regFuture.cause() != null) {
             return regFuture;
         }
-
         if (regFuture.isDone()) {
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
@@ -362,18 +369,30 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
                 // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
                 return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
             }
+            // 如果新的channel崩溃那么channel可能为null,例如：创建了过多的文件描述符(进程可使用的文件描述符是有限的)
+            // 由于channel没有注册成功，我们需要强制的使用全局的EventExecutor
             // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
         ChannelFuture regFuture = config().group().register(channel);
+        // 这里并没有进行任何的等待
         if (regFuture.cause() != null) {
+            // 产生了异常
             if (channel.isRegistered()) {
                 channel.close();
             } else {
                 channel.unsafe().closeForcibly();
             }
         }
+
+        // 如果代码走到这里并且Promise没有失败，那么可能是以下情况的一种：
+        // 1.当我们尝试注册channel到EventLoop时，到这里的时候注册操作可能已经完成(当前线程就是EventLoop的线程)
+        // 即：现在尝试调用bind()或connect()方法是安全的，因为Channel已经成功的注册到了它的EventLoop上
+        // 2.如果我们尝试的注册操作是异步的，由其它线程执行的，那么请求的注册操作已经成功的添加到了EventLoop 任务队列中，
+        // 等待接下来的执行。那么：现在尝试调用bind()或connect()方法是安全的，因为：
+        // bind()方法或connect()方法将会在注册请求(任务)之后被调度执行，因为register(), bind(), and connect()都绑定在
+        // 同一个线程上。(顺序的任务队列+同一个线程，先提交的先执行)
 
         // If we are here and the promise is not failed, it's one of the following cases:
         // 1) If we attempted registration from the event loop, the registration has been completed at this point.
