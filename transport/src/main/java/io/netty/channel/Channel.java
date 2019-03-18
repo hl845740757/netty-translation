@@ -255,18 +255,23 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
         void disconnect(ChannelPromise promise);
 
         /**
+         * 关闭{@link ChannelPromise}中的{@link Channel}并且通知{@link ChannelPromise}IO操作已完成。
          * Close the {@link Channel} of the {@link ChannelPromise} and notify the {@link ChannelPromise} once the
          * operation was complete.
          */
         void close(ChannelPromise promise);
 
         /**
+         * 立即关闭channel而不触发任何事件。可能只在channel注册操作失败的时候有用(注册到它的EventLoop线程)。
+         *
          * Closes the {@link Channel} immediately without firing any events.  Probably only useful
          * when registration attempt failed.
          */
         void closeForcibly();
 
         /**
+         * 将{@link ChannelPromise}中的{@link Channel}从{@link EventLoop}取消注册，并且通知{@link ChannelPromise}取消操作已完成。
+         *
          * Deregister the {@link Channel} of the {@link ChannelPromise} from {@link EventLoop} and notify the
          * {@link ChannelPromise} once the operation was complete.
          */

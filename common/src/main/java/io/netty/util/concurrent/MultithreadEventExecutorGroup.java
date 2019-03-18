@@ -86,7 +86,9 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      *
      * @param nThreads          the number of threads that will be used by this instance.
      * @param executor          the Executor to use, or {@code null} if the default should be used.
-     *
+     *                          是真正创建线程的Executor，它用于创建EventLoop线程。必须保证能创建足够的线程。
+     *                          (因为每一个IO任务(EventLoop)都是死循环，每一个EventLoop需要一个独立的线程，
+     *                          如果不能创建足够的线程，则会引发异常)
      * @param chooserFactory    the {@link EventExecutorChooserFactory} to use.
      *                          创建child选择器的工厂
      * @param args              arguments which will passed to each {@link #newChild(Executor, Object...)} call
@@ -98,7 +100,10 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             throw new IllegalArgumentException(String.format("nThreads: %d (expected: > 0)", nThreads));
         }
 
-        // 如果未指定Executor 则创建的是无界线程池(每一个任务创建一个线程)。这个一定要注意
+        // 如果未指定Executor 则创建的是无界线程池(每一个任务创建一个线程)。
+        // 这个一定要注意，在Netty中是安全的，它用于真正的创建线程。必须能保证创建足够的线程。
+        // 线程数由执行IO监听的线程数决定，也就是EventLoop的个数。每一个EventLoop可看做一个死循环的Runnable
+
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
@@ -189,6 +194,9 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     }
 
     /**
+     * 创建一个新的EventExecutor，稍后可以被后面的{@link #next()}方法访问。
+     * 将为服务于当前{@link MultithreadEventExecutorGroup}的每一个线程调用该方法。
+     *
      * Create a new EventExecutor which will later then accessible via the {@link #next()}  method. This method will be
      * called for each thread that will serve this {@link MultithreadEventExecutorGroup}.
      *

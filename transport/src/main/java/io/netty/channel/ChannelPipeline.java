@@ -29,15 +29,31 @@ import java.util.NoSuchElementException;
 
 
 /**
+ * ChannelPipeline 是一个 {@link ChannelHandler}s的列表(list).(它暗示了ChannelHandler之间是有序的)
+ * 这些{@link ChannelHandler}负责 处理或拦截 {@link Channel} 上的 入站事件 和 出站操作。
+ * ChannelPipeline是 拦截过滤器模式 的高级实现形式。
+ * 它允许用户完全的控制 如何处理一个事件 和 pipeline中的channelHandler之间如何相互交互。
+ *
  * A list of {@link ChannelHandler}s which handles or intercepts inbound events and outbound operations of a
  * {@link Channel}.  {@link ChannelPipeline} implements an advanced form of the
  * <a href="http://www.oracle.com/technetwork/java/interceptingfilter-142169.html">Intercepting Filter</a> pattern
  * to give a user full control over how an event is handled and how the {@link ChannelHandler}s in a pipeline
  * interact with each other.
  *
+ *
+ * 创建一个Pipeline
+ * 每一个chanel都有一个它自己的pipeline,并且会在一个channel创建的时候自动的创建。
  * <h3>Creation of a pipeline</h3>
  *
  * Each channel has its own pipeline and it is created automatically when a new channel is created.
+ *
+ * 一个事件在pipeline中如何流动？
+ * 下面的图描述了IO事件一般是如何被{@link ChannelPipeline}中的{@link ChannelHandler}处理的。
+ * 一个IO事件被 {@link ChannelInboundHandler} 或 {@link ChannelOutboundHandler}处理，
+ * 并且通过调用定义在{@link ChannelHandlerContext}中的 事件传播方法转发给它相近的handler,
+ * (事件传播方法)如：{@link ChannelHandlerContext#fireChannelRead(Object)} 和 {@link ChannelHandlerContext#write(Object)}
+ *
+ * (tips: ctx的读写方法都是传播方法，传递到下一个ctx，而如果调用channel的读写方法，则是重新在pipeline中流动)
  *
  * <h3>How an event flows in a pipeline</h3>
  *

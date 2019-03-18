@@ -56,8 +56,14 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             new NotYetConnectedException(), AbstractUnsafe.class, "flush0()");
 
     private final Channel parent;
+    /**
+     * channel的全局唯一的识别码
+     */
     private final ChannelId id;
     private final Unsafe unsafe;
+    /**
+     * Channel的管道，处理Channel中流动的数据
+     */
     private final DefaultChannelPipeline pipeline;
     private final VoidChannelPromise unsafeVoidPromise = new VoidChannelPromise(this, false);
     private final CloseFuture closeFuture = new CloseFuture(this);
@@ -82,6 +88,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     protected AbstractChannel(Channel parent) {
         this.parent = parent;
         id = newId();
+        // 这里没调用另一个重载的构造方法呢...
         unsafe = newUnsafe();
         pipeline = newChannelPipeline();
     }
@@ -105,6 +112,8 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     }
 
     /**
+     * 创建一个默认的ChannelId。
+     * 子类可以覆盖该方法，为构造方法中使用的{@link Channel}分配一个自定义的{@link ChannelId}
      * Returns a new {@link DefaultChannelId} instance. Subclasses may override this method to assign custom
      * {@link ChannelId}s to {@link Channel}s that use the {@link AbstractChannel#AbstractChannel(Channel)} constructor.
      */
@@ -341,6 +350,8 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
     }
 
     /**
+     * 创建一个Unsafe实例用于{@link Channel}的生命周期
+     *
      * Create a new {@link AbstractUnsafe} instance which will be used for the life-time of the {@link Channel}
      */
     protected abstract AbstractUnsafe newUnsafe();

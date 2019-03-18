@@ -39,6 +39,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 使用NIO selector
+ * 一个ServerSocketChannel的实现。
+ * 它使用基于NIO Selector的实现 去接收新的连接。
+ *
  * A {@link io.netty.channel.socket.ServerSocketChannel} implementation which uses
  * NIO selector based implementation to accept new connections.
  */
@@ -53,6 +57,11 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
     private static ServerSocketChannel newSocket(SelectorProvider provider) {
         try {
             /**
+             * 使用{@link SelectorProvider#openSocketChannel()} 创建{@link SocketChannel}，
+             * 这样能够移除每一次{@link SocketChannel#open()}方法调用{@link SelectorProvider#provider()}带来的竞争条件。
+             *
+             * 因为{@link SelectorProvider#provider()}是加锁的，且锁的是静态对象(全局锁)。
+             *
              *  Use the {@link SelectorProvider} to open {@link SocketChannel} and so remove condition in
              *  {@link SelectorProvider#provider()} which is called by each ServerSocketChannel.open() otherwise.
              *
@@ -85,6 +94,8 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
      * Create a new instance using the given {@link ServerSocketChannel}.
      */
     public NioServerSocketChannel(ServerSocketChannel channel) {
+        // channel是JDK的ServerSocketChannel
+        // ServerSocketChannel只关注连接事件。 (只在selector中注册ACCEPT事件)
         super(null, channel, SelectionKey.OP_ACCEPT);
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
     }

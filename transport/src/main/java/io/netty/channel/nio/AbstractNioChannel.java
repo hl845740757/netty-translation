@@ -54,6 +54,9 @@ public abstract class AbstractNioChannel extends AbstractChannel {
     private static final ClosedChannelException DO_CLOSE_CLOSED_CHANNEL_EXCEPTION = ThrowableUtil.unknownStackTrace(
             new ClosedChannelException(), AbstractNioChannel.class, "doClose()");
 
+    /**
+     * JDK的channel，实际上是代理。 Netty中有许多代理实现
+     */
     private final SelectableChannel ch;
     protected final int readInterestOp;
     volatile SelectionKey selectionKey;
@@ -78,7 +81,10 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      *
      * @param parent            the parent {@link Channel} by which this instance was created. May be {@code null}
      * @param ch                the underlying {@link SelectableChannel} on which it operates
+     *                          AbstractNioChannel底层操作的对象，被代理的对象
      * @param readInterestOp    the ops to set to receive data from the {@link SelectableChannel}
+     *                          感兴趣的事件集合，从{@link SelectableChannel}选择的事件类型。
+     *                          (觉得Netty可以用枚举对象封装一下)
      */
     protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
         super(parent);
@@ -110,6 +116,11 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         return (NioUnsafe) super.unsafe();
     }
 
+    /**
+     * 返回JDK的channel对象
+     * 子类覆盖它是为了返回具体的类型
+     * @return
+     */
     protected SelectableChannel javaChannel() {
         return ch;
     }

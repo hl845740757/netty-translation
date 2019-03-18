@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * {@link AbstractNioMessageChannel} 表示的是对消息进行操作的{@link AbstractNioChannel}。
+ *
  * {@link AbstractNioChannel} base class for {@link Channel}s that operate on messages.
  */
 public abstract class AbstractNioMessageChannel extends AbstractNioChannel {

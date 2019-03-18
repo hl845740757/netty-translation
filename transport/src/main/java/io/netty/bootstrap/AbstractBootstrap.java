@@ -408,6 +408,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
 
     /**
      * 初始化与该 BootStrap相关的channel
+     * (模板方法中的一个具体步骤)
      * @param channel
      * @throws Exception
      */

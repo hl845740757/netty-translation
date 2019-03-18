@@ -26,17 +26,37 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * {@link ChannelHandler} 处理一个IO事件或者拦截一个IO操作，并且将它转发到它所在的{@link ChannelPipeline}中的下一个handler。
+ *
  * Handles an I/O event or intercepts an I/O operation, and forwards it to its next handler in
  * its {@link ChannelPipeline}.
  *
- * <h3>Sub-types</h3>
+ * 子类型有：
+ * {@link ChannelHandler}本身没有提供太多方法，但是你经常需要实现一个它的子类：
  * <p>
+ * <li>{@link ChannelInboundHandler} 用于处理入站的IO事件</li>
+ * <li>{@link ChannelOutboundHandler} 用于处理出站IO操作</li>
+ * </p>
+ *
+ * <h3>Sub-types</h3>
  * {@link ChannelHandler} itself does not provide many methods, but you usually have to implement one of its subtypes:
+ * <p>
  * <ul>
  * <li>{@link ChannelInboundHandler} to handle inbound I/O events, and</li>
  * <li>{@link ChannelOutboundHandler} to handle outbound I/O operations.</li>
  * </ul>
  * </p>
+ *
+ * <p>
+ * 备选方案：以下适配器类为你提供了一些方便。
+ * <ul>
+ * <li>{@link ChannelInboundHandlerAdapter} 用于处理入站事件,</li>
+ * <li>{@link ChannelOutboundHandlerAdapter} 用于处理出站IO操作</li>
+ * <li>{@link ChannelDuplexHandler} 用于同时处理入站和出站事件</li>
+ * </ul>
+ * </p>
+ * 需要更多信息的话请查阅每一个子类型的文档。
+ *
  * <p>
  * Alternatively, the following adapter classes are provided for your convenience:
  * <ul>
@@ -178,17 +198,24 @@ import java.lang.annotation.Target;
 public interface ChannelHandler {
 
     /**
+     * 当{@link ChannelHandler}被添加到真实的上下文中并准备处理事件时被调用。
+     *
      * Gets called after the {@link ChannelHandler} was added to the actual context and it's ready to handle events.
      */
     void handlerAdded(ChannelHandlerContext ctx) throws Exception;
 
     /**
+     * 当{@link ChannelHandler}从真实的上下文中被移除并不再处理事件时被调用。
+     *
      * Gets called after the {@link ChannelHandler} was removed from the actual context and it doesn't handle events
      * anymore.
      */
     void handlerRemoved(ChannelHandlerContext ctx) throws Exception;
 
     /**
+     * 当一个异常被抛出时被调用。
+     * 虽然建议不被使用，但是它仍然是{@link ChannelInboundHandler}的一部分。
+     *
      * Gets called if a {@link Throwable} was thrown.
      *
      * @deprecated is part of {@link ChannelInboundHandler}

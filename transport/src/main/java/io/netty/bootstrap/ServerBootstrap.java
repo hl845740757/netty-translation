@@ -187,19 +187,26 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         }
 
         // !!!划重点
+        // 当channel绑定到EventLoop线程上时，通过ChannelInitializer将配置信息真正的赋值到pipeline.
+        // 现在添加了一个待激活的ChannelInitializer，在注册成功时才会生效
+
         p.addLast(new ChannelInitializer<Channel>() {
             @Override
             public void initChannel(final Channel ch) throws Exception {
+                // 这里的ch 其实还是外部的 channel (parentGroup，ServerSocketChannel)
+
                 final ChannelPipeline pipeline = ch.pipeline();
                 ChannelHandler handler = config.handler();
                 if (handler != null) {
                     pipeline.addLast(handler);
                 }
 
+                // 对应《Scalable IO In Java》中的Acceptor，启动以后注册一个acceptor到pipeline
+                // 不太明白的是，为何不直接pipeline.addLast(acceptor)??? 这里不就是它的eventLoop线程吗？
+
                 ch.eventLoop().execute(new Runnable() {
                     @Override
                     public void run() {
-                        // ！！！它的作用就是将接收到的channel注册到ChildEventLoopGroup中！
                         pipeline.addLast(new ServerBootstrapAcceptor(
                                 ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
                     }
@@ -233,7 +240,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     /**
      * ServerBootstrapAcceptor是一个特殊的入站处理器。
-     * 它负责
+     * 它负责将接收到的连接(childChannel)分发给childGroup(Sub Reactor)
      */
     private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
 
@@ -264,11 +271,20 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
             };
         }
 
+        /**
+         * accept() -- > create()
+         * 当接收到连接之后，需要将连接转发给childGroup。
+         * MainReactor只负责accept() 和 create()操作。
+         * 将channel的IO事件转发给其它的reactor，可实现负载均衡。
+         * @param ctx
+         * @param msg
+         */
         @Override
         @SuppressWarnings("unchecked")
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            // 接收到的连接(childChannel)
             final Channel child = (Channel) msg;
-
+            // 将配置的child相关的属性初始化给新(接收)的channel
             child.pipeline().addLast(childHandler);
 
             setChannelOptions(child, childOptions, logger);
@@ -277,16 +293,19 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                 child.attr((AttributeKey<Object>) e.getKey()).set(e.getValue());
             }
 
+            // 将新的channel注册到childGroup中(注册到某个线程上)。
             try {
                 childGroup.register(child).addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture future) throws Exception {
+                        // 如果注册失败，则强制关闭该连接
                         if (!future.isSuccess()) {
                             forceClose(child, future.cause());
                         }
                     }
                 });
             } catch (Throwable t) {
+                // 出现任何一次，则强制关闭该连接
                 forceClose(child, t);
             }
         }
