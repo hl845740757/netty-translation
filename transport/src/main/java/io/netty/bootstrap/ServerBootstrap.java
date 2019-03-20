@@ -202,6 +202,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
                 }
 
                 // 对应《Scalable IO In Java》中的Acceptor，启动以后注册一个acceptor到pipeline
+                // 将Acceptor添加到Pipeline的末尾，这样当接收到新的连接时，pipeline末尾就会转移到ChildGroup
                 // 不太明白的是，为何不直接pipeline.addLast(acceptor)??? 这里不就是它的eventLoop线程吗？
 
                 ch.eventLoop().execute(new Runnable() {
@@ -272,8 +273,7 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         }
 
         /**
-         * accept() -- > create()
-         * 当接收到连接之后，需要将连接转发给childGroup。
+         * 将新建立的连接转移到到childGroup。
          * MainReactor只负责accept() 和 create()操作。
          * 将channel的IO事件转发给其它的reactor，可实现负载均衡。
          * @param ctx

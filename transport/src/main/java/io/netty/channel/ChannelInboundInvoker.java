@@ -15,6 +15,9 @@
  */
 package io.netty.channel;
 
+/**
+ * Channel入站事件调用者
+ */
 public interface ChannelInboundInvoker {
 
     /**

@@ -97,6 +97,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
         // channel是JDK的ServerSocketChannel
         // ServerSocketChannel只关注连接事件。 (只在selector中注册ACCEPT事件)
         super(null, channel, SelectionKey.OP_ACCEPT);
+        // 创建对应的配置对象
         config = new NioServerSocketChannelConfig(this, javaChannel().socket());
     }
 
@@ -204,6 +205,7 @@ public class NioServerSocketChannel extends AbstractNioMessageChannel
     }
 
     private final class NioServerSocketChannelConfig extends DefaultServerSocketChannelConfig {
+
         private NioServerSocketChannelConfig(NioServerSocketChannel channel, ServerSocket javaSocket) {
             super(channel, javaSocket);
         }

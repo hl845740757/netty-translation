@@ -37,10 +37,11 @@ import java.nio.channels.ScatteringByteChannel;
 public class UnpooledUnsafeDirectByteBuf extends AbstractReferenceCountedByteBuf {
 
     private final ByteBufAllocator alloc;
-
+    // javaNio中的直接内存ByteBuffer
     private ByteBuffer tmpNioBuf;
     private int capacity;
     private boolean doNotFree;
+    // javaNio中的堆内存ByteBuffer
     ByteBuffer buffer;
     long memoryAddress;
 
@@ -112,6 +113,7 @@ public class UnpooledUnsafeDirectByteBuf extends AbstractReferenceCountedByteBuf
     }
 
     /**
+     * 使用给定的初始容量分配一个直接内存的{@link ByteBuffer}
      * Allocate a new direct {@link ByteBuffer} with the given initialCapacity.
      */
     protected ByteBuffer allocateDirect(int initialCapacity) {

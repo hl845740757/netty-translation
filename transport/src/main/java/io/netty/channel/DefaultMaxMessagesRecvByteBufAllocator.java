@@ -109,6 +109,11 @@ public abstract class DefaultMaxMessagesRecvByteBufAllocator implements MaxMessa
             totalMessages = totalBytesRead = 0;
         }
 
+        /**
+         * 核心：分Buffer
+         * @param alloc
+         * @return
+         */
         @Override
         public ByteBuf allocate(ByteBufAllocator alloc) {
             return alloc.ioBuffer(guess());

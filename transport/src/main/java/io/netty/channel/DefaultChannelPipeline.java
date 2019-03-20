@@ -94,6 +94,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         succeededFuture = new SucceededChannelFuture(channel, null);
         voidPromise =  new VoidChannelPromise(channel, true);
 
+        // 重要！ChannelPipeline的首尾节点
         tail = new TailContext(this);
         head = new HeadContext(this);
 
@@ -1239,6 +1240,9 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    /**
+     * 一个捕获所有(消息的)特殊的handler。它处理字节和消息类型。
+     */
     // A special catch-all handler that handles both bytes and messages.
     final class TailContext extends AbstractChannelHandlerContext implements ChannelInboundHandler {
 

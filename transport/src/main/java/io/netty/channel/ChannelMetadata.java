@@ -20,11 +20,18 @@ import static io.netty.util.internal.ObjectUtil.checkPositive;
 import java.net.SocketAddress;
 
 /**
+ * {@link ChannelMetadata}表示{@link Channel}的属性实现。
+ *
  * Represents the properties of a {@link Channel} implementation.
  */
 public final class ChannelMetadata {
-
+    /**
+     * 是否已断开连接
+     */
     private final boolean hasDisconnect;
+    /**
+     * 默认的每次读消息个数
+     */
     private final int defaultMaxMessagesPerRead;
 
     /**

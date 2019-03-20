@@ -22,6 +22,8 @@ import io.netty.util.internal.StringUtil;
 import java.nio.ByteBuffer;
 
 /**
+ * 简单的{@link ByteBufAllocator}实现，不缓存任何的东西。
+ *
  * Simplistic {@link ByteBufAllocator} implementation that does not pool anything.
  */
 public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator implements ByteBufAllocatorMetricProvider {

@@ -34,17 +34,21 @@ public interface RecvByteBufAllocator {
     Handle newHandle();
 
     /**
+     * 不推荐外部使用，请使用{@link ExtendedHandle}
+     *
      * @deprecated Use {@link ExtendedHandle}.
      */
     @Deprecated
     interface Handle {
         /**
+         * 创建一个接收缓冲区，它的容量大到足以读取所有的输入数据，并且足够小到不浪费它的空间。
          * Creates a new receive buffer whose capacity is probably large enough to read all inbound data and small
          * enough not to waste its space.
          */
         ByteBuf allocate(ByteBufAllocator alloc);
 
         /**
+         * 类似于{@link #allocate(ByteBufAllocator)}，除了它不真正的分配任何东西，只是告诉容量。
          * Similar to {@link #allocate(ByteBufAllocator)} except that it does not allocate anything but just tells the
          * capacity.
          */
