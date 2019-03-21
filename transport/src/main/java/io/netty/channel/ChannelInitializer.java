@@ -29,10 +29,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * 一个特殊的Channel入站处理器。
  * 一旦channel注册到它的EventLooop上，ChannelInitializer提供了一个简单的方式去初始化channel。
  *
+ * <p>
  * A special {@link ChannelInboundHandler} which offers an easy way to initialize a {@link Channel} once it was
  * registered to its {@link EventLoop}.
  *
+ * <p>
+ * ChannelInitializer的实现多数用在{@link Bootstrap#handler(ChannelHandler)}，
+ * {@link ServerBootstrap#handler(ChannelHandler)} 和 {@link ServerBootstrap#childHandler(ChannelHandler)}的
+ * 上下文中取设置{@link Channel}的{@link ChannelPipeline}。
  *
+ * <p>
  * Implementations are most often used in the context of {@link Bootstrap#handler(ChannelHandler)} ,
  * {@link ServerBootstrap#handler(ChannelHandler)} and {@link ServerBootstrap#childHandler(ChannelHandler)} to
  * setup the {@link ChannelPipeline} of a {@link Channel}.
@@ -50,6 +56,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * bootstrap.childHandler(new MyChannelInitializer());
  * ...
  * </pre>
+ *
+ * <p>
+ * 注意:该类被标记为 {@link Sharable}(可共享的)，也就是说它的实现必须是线程安全的以便重用。
+ * </p>
  * Be aware that this class is marked as {@link Sharable} and so the implementation must be safe to be re-used.
  *
  * @param <C>   A sub-type of {@link Channel}
@@ -66,6 +76,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
     /**
      * 当channel注册到它的EventLoop的时候，该方法会被调用一次。
      * 且在方法返回之后，该ChannelInitializer实例将会出 {@link Channel}的 {@link ChannelPipeline}中移除。
+     * (它的价值在于在一个合适的时机添加我们的handler到pipeline)
      *
      * This method will be called once the {@link Channel} was registered. After the method returns this instance
      * will be removed from the {@link ChannelPipeline} of the {@link Channel}.
@@ -83,13 +94,16 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
     @Override
     @SuppressWarnings("unchecked")
     public final void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        // 通常情况下，该方法永远不会被调用，而handlerAdded(...)方法应该调用 initChannel(...)并且移除自身。
         // Normally this method will never be called as handlerAdded(...) should call initChannel(...) and remove
         // the handler.
         if (initChannel(ctx)) {
+            // 我们调用完initChannel(...)之后，需要调用pipeline.fireChannelRegistered()以确保我们没有丢失一个事件。
             // we called initChannel(...) so we need to call now pipeline.fireChannelRegistered() to ensure we not
             // miss an event.
             ctx.pipeline().fireChannelRegistered();
 
+            // 我们完成了channel初始化之后，移除有关该channel的所有状态。 (initializer是会被重用的)
             // We are done with init the Channel, removing all the state for the Channel now.
             removeState(ctx);
         } else {
@@ -110,6 +124,8 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
     }
 
     /**
+     * 请注意：如果复写该方法，请确保调用super();
+     *
      * {@inheritDoc} If override this method ensure you call super!
      */
     @Override
@@ -132,10 +148,17 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
         initMap.remove(ctx);
     }
 
+    /**
+     * 初始化channel的模板方法实现。
+     * @param ctx
+     * @return
+     * @throws Exception
+     */
     @SuppressWarnings("unchecked")
     private boolean initChannel(ChannelHandlerContext ctx) throws Exception {
-        if (initMap.add(ctx)) { // Guard against re-entrance.
+        if (initMap.add(ctx)) { // Guard against re-entrance. 防止再次进入
             try {
+                // 这里执行子类的初始化操作
                 initChannel((C) ctx.channel());
             } catch (Throwable cause) {
                 // Explicitly call exceptionCaught(...) as we removed the handler before calling initChannel(...).
@@ -143,7 +166,7 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
                 exceptionCaught(ctx, cause);
             } finally {
                 ChannelPipeline pipeline = ctx.pipeline();
-                // 移除自身的context(handler被包装在ChannelHandlerContext中)
+                // 最后移除自身的context(handler被包装在ChannelHandlerContext中)
                 if (pipeline.context(this) != null) {
                     pipeline.remove(this);
                 }
@@ -154,10 +177,14 @@ public abstract class ChannelInitializer<C extends Channel> extends ChannelInbou
     }
 
     private void removeState(final ChannelHandlerContext ctx) {
+        // 如果我们使用了EventExecutor做了一些不太好的事情，移除操作可能以异步的方式出现。
         // The removal may happen in an async fashion if the EventExecutor we use does something funky.
         if (ctx.isRemoved()) {
             initMap.remove(ctx);
         } else {
+            // 该context可能还未移。该情况出现的最可能的情况是因为使用了一个自定义的EventExecutor。
+            // 让我们把它调教到EventExecutor上，以便在卸载时给它更多的时间来完成。
+
             // The context is not removed yet which is most likely the case because a custom EventExecutor is used.
             // Let's schedule it on the EventExecutor to give it some more time to be completed in case it is offloaded.
             ctx.executor().execute(new Runnable() {

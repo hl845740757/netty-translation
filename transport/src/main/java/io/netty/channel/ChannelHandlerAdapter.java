@@ -24,7 +24,9 @@ import java.util.Map;
  * Skeleton implementation of a {@link ChannelHandler}.
  */
 public abstract class ChannelHandlerAdapter implements ChannelHandler {
-
+    /**
+     * 不需要声明为volatile，因为它仅仅用于合理性检查。
+     */
     // Not using volatile because it's used only for a sanity check.
     boolean added;
 

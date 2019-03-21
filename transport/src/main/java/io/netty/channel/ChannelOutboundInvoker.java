@@ -21,9 +21,19 @@ import io.netty.util.concurrent.FutureListener;
 import java.net.ConnectException;
 import java.net.SocketAddress;
 
+/**
+ * Channel出站调用者
+ * (出站事件传播)
+ */
 public interface ChannelOutboundInvoker {
 
     /**
+     * 请求绑定到给定的{@link SocketAddress} (socket地址)上，并且一旦操作完成时通知返回的{@link ChannelFuture}。
+     * (操作完成是指：要么成功，要么由于错误失败)
+     *
+     * 这将导致该{@link Channel}的{@link ChannelPipeline}包含的下一个{@link ChannelOutboundHandler}的
+     * {@link ChannelOutboundHandler#bind(ChannelHandlerContext, SocketAddress, ChannelPromise)}方法被调用。
+     *
      * Request to bind to the given {@link SocketAddress} and notify the {@link ChannelFuture} once the operation
      * completes, either because the operation was successful or because of an error.
      * <p>
@@ -35,6 +45,13 @@ public interface ChannelOutboundInvoker {
     ChannelFuture bind(SocketAddress localAddress);
 
     /**
+     * 请求连接到给定的{@link SocketAddress}(socket地址)，并且一旦操作完成时通知返回的{@link ChannelFuture}。
+     * (操作完成是指：要么成功，要么由于错误失败)
+     * <p>
+     * 如果由于连接超时而失败，{@link ChannelFuture}的get()方法将会失败返回一个{@link ConnectTimeoutException}(连接超时异常)、
+     * 如果由于连接被拒失败，get()方法将会返回{@link ConnectException}异常。
+     * <p>
+     *
      * Request to connect to the given {@link SocketAddress} and notify the {@link ChannelFuture} once the operation
      * completes, either because the operation was successful or because of an error.
      * <p>
@@ -50,6 +67,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture connect(SocketAddress remoteAddress);
 
     /**
+     * 请求连接到给定的{@link SocketAddress}，同时绑定到给定本地地址，并且一旦操作完成时通知返回的{@link ChannelFuture}。
+     *
      * Request to connect to the given {@link SocketAddress} while bind to the localAddress and notify the
      * {@link ChannelFuture} once the operation completes, either because the operation was successful or because of
      * an error.
@@ -62,6 +81,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress);
 
     /**
+     * 请求从远程对等端断开连接，并且一个操作完成时通知返回的 {@link ChannelFuture}。
+     *
      * Request to disconnect from the remote peer and notify the {@link ChannelFuture} once the operation completes,
      * either because the operation was successful or because of an error.
      * <p>
@@ -73,9 +94,10 @@ public interface ChannelOutboundInvoker {
     ChannelFuture disconnect();
 
     /**
+     * 请求关闭{@link Channel}并且一旦操作完成时通知返回的 {@link ChannelFuture}。
+     *
      * Request to close the {@link Channel} and notify the {@link ChannelFuture} once the operation completes,
-     * either because the operation was successful or because of
-     * an error.
+     * either because the operation was successful or because of an error.
      *
      * After it is closed it is not possible to reuse it again.
      * <p>
@@ -87,6 +109,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture close();
 
     /**
+     * 请求从之前赋值的{@link EventExecutor}中取消注册，并且一旦操作完成时通知返回的{@link ChannelFuture}.
+     *
      * Request to deregister from the previous assigned {@link EventExecutor} and notify the
      * {@link ChannelFuture} once the operation completes, either because the operation was successful or because of
      * an error.
@@ -100,6 +124,9 @@ public interface ChannelOutboundInvoker {
     ChannelFuture deregister();
 
     /**
+     * 注释参考{@link #bind(SocketAddress)},给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     * <p>
+     *
      * Request to bind to the given {@link SocketAddress} and notify the {@link ChannelFuture} once the operation
      * completes, either because the operation was successful or because of an error.
      *
@@ -113,6 +140,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture bind(SocketAddress localAddress, ChannelPromise promise);
 
     /**
+     * 注释参考{@link #connect(SocketAddress)},给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     *
      * Request to connect to the given {@link SocketAddress} and notify the {@link ChannelFuture} once the operation
      * completes, either because the operation was successful or because of an error.
      *
@@ -131,6 +160,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture connect(SocketAddress remoteAddress, ChannelPromise promise);
 
     /**
+     * 注释参考{@link #connect(SocketAddress,SocketAddress)},给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     *
      * Request to connect to the given {@link SocketAddress} while bind to the localAddress and notify the
      * {@link ChannelFuture} once the operation completes, either because the operation was successful or because of
      * an error.
@@ -145,6 +176,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture connect(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise);
 
     /**
+     * 注释参考{@link #disconnect()},给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     *
      * Request to disconnect from the remote peer and notify the {@link ChannelFuture} once the operation completes,
      * either because the operation was successful or because of an error.
      *
@@ -158,6 +191,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture disconnect(ChannelPromise promise);
 
     /**
+     * 注释参考{@link #close()},给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     *
      * Request to close the {@link Channel} and notify the {@link ChannelFuture} once the operation completes,
      * either because the operation was successful or because of
      * an error.
@@ -173,6 +208,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture close(ChannelPromise promise);
 
     /**
+     * 注释参考{@link #deregister()},给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     *
      * Request to deregister from the previous assigned {@link EventExecutor} and notify the
      * {@link ChannelFuture} once the operation completes, either because the operation was successful or because of
      * an error.
@@ -187,6 +224,11 @@ public interface ChannelOutboundInvoker {
     ChannelFuture deregister(ChannelPromise promise);
 
     /**
+     * 请求从{@link Channel}中读取数据到它的第一个inbound buffer，并且如果读取到了数据，则触发
+     * {@link ChannelInboundHandler#channelRead(ChannelHandlerContext, Object)}事件，并且
+     * 触发{@link ChannelInboundHandler#channelReadComplete(ChannelHandlerContext) channelReadComplete}事件，这样
+     * handler能够决定继续读。吐过这里已经有一个挂起(等待)的读操作，该方法什么也不会做。
+     *
      * Request to Read data from the {@link Channel} into the first inbound buffer, triggers an
      * {@link ChannelInboundHandler#channelRead(ChannelHandlerContext, Object)} event if data was
      * read, and triggers a
@@ -201,6 +243,10 @@ public interface ChannelOutboundInvoker {
     ChannelOutboundInvoker read();
 
     /**
+     * 请求通过当前的 {@link ChannelHandlerContext} 通过{@link ChannelPipeline}写入一个消息。
+     * 该方法并不好请求真正的flush操作，因此当你希望请求flush所有填充的数据进行真正的传输时，一定要调用一次{@link #flush()}方法.
+     * 返回的{@link ChannelFuture}会在操作完成时(发送出去或失败)收到通知。
+     *
      * Request to write a message via this {@link ChannelHandlerContext} through the {@link ChannelPipeline}.
      * This method will not request to actual flush, so be sure to call {@link #flush()}
      * once you want to request to flush all pending data to the actual transport.
@@ -208,6 +254,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture write(Object msg);
 
     /**
+     * 注释参考{@link #write(Object)}。给定{@link ChannelPromise}将会被通知(其实返回的就是它)。
+     *
      * Request to write a message via this {@link ChannelHandlerContext} through the {@link ChannelPipeline}.
      * This method will not request to actual flush, so be sure to call {@link #flush()}
      * once you want to request to flush all pending data to the actual transport.
@@ -215,6 +263,8 @@ public interface ChannelOutboundInvoker {
     ChannelFuture write(Object msg, ChannelPromise promise);
 
     /**
+     * 通过该ChannelOutboundInvoker请求flush所有填充的消息(进行真正的传输)
+     *
      * Request to flush all pending messages via this ChannelOutboundInvoker.
      */
     ChannelOutboundInvoker flush();
@@ -230,16 +280,23 @@ public interface ChannelOutboundInvoker {
     ChannelFuture writeAndFlush(Object msg);
 
     /**
+     * 返回一个新创建的{@link ChannelPromise}.用于接收IO操作通知。
+     *
      * Return a new {@link ChannelPromise}.
      */
     ChannelPromise newPromise();
 
     /**
+     * 返回一个新创建的{@link ChannelProgressivePromise}。
+     * 
      * Return an new {@link ChannelProgressivePromise}
      */
     ChannelProgressivePromise newProgressivePromise();
 
     /**
+     * 创建一个{@link ChannelFuture}，它标记它关联的操作早已成功。因此{@link ChannelFuture#isSuccess()}总是返回成功。
+     * 所有添加到它的{@link FutureListener}将直接被通知，此外每一个阻塞方法的调用将非阻塞的立即返回。
+     * 
      * Create a new {@link ChannelFuture} which is marked as succeeded already. So {@link ChannelFuture#isSuccess()}
      * will return {@code true}. All {@link FutureListener} added to it will be notified directly. Also
      * every call of blocking methods will just return without blocking.
@@ -247,6 +304,9 @@ public interface ChannelOutboundInvoker {
     ChannelFuture newSucceededFuture();
 
     /**
+     * 创建一个{@link ChannelFuture}，它标记它关联的操作早已失败。因此{@link ChannelFuture#isSuccess()}总是返回失败。
+     * 所有添加到它的{@link FutureListener}将直接被通知，此外每一个阻塞方法的调用将非阻塞的立即返回。
+     *
      * Create a new {@link ChannelFuture} which is marked as failed already. So {@link ChannelFuture#isSuccess()}
      * will return {@code false}. All {@link FutureListener} added to it will be notified directly. Also
      * every call of blocking methods will just return without blocking.
@@ -254,6 +314,14 @@ public interface ChannelOutboundInvoker {
     ChannelFuture newFailedFuture(Throwable cause);
 
     /**
+     * 返回一个特殊的ChannelPromise，它可以被不同的操作重用。
+     * <p>
+     * 它仅支持用于{@link ChannelOutboundInvoker#write(Object, ChannelPromise)}.
+     * <p>
+     * 请注意，返回的{@link ChannelPromise}将不支持大多数操作，并且只应在你想保存一个对象为每个写入操作分配时使用。
+     * 如果操作失败，您将无法检测操作是否完成，因为在这种情况下实现将调用{@link ChannelPipeline #fireExceptionCaught（Throwable）}。
+     * <p>
+     *
      * Return a special ChannelPromise which can be reused for different operations.
      * <p>
      * It's only supported to use

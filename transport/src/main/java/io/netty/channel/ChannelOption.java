@@ -23,15 +23,26 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 
 /**
+ * {@link ChannelOption}允许以一种类型安全的方式去配置{@link ChannelConfig}。
+ * 支持的{@link ChannelOption}依赖于{@link ChannelConfig}的真正实现，并且可能依赖于它所属的
+ * 传输(方式)的性质。
+ *
+ * ChannelOption本身维护值，只用于约束值的类型。它作为key存取它对它的值。
+ * <p>
+ *
  * A {@link ChannelOption} allows to configure a {@link ChannelConfig} in a type-safe
  * way. Which {@link ChannelOption} is supported depends on the actual implementation
  * of {@link ChannelConfig} and may depend on the nature of the transport it belongs
  * to.
  *
- * @param <T>   the type of the value which is valid for the {@link ChannelOption}
+ * @param <T> {@link ChannelOption}的有效值类型。
+ *           the type of the value which is valid for the {@link ChannelOption}
  */
 public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
 
+    /**
+     * ChannelOption的常量池
+     */
     private static final ConstantPool<ChannelOption<Object>> pool = new ConstantPool<ChannelOption<Object>>() {
         @Override
         protected ChannelOption<Object> newConstant(int id, String name) {
@@ -40,6 +51,9 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
     };
 
     /**
+     * 返回指定名字的{@link ChannelOption}。
+     * 是对{@link ConstantPool}的一个封装。
+     *
      * Returns the {@link ChannelOption} of the specified name.
      */
     @SuppressWarnings("unchecked")
@@ -105,6 +119,8 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
      */
     public static final ChannelOption<Boolean> AUTO_CLOSE = valueOf("AUTO_CLOSE");
 
+    // region socket属性
+
     public static final ChannelOption<Boolean> SO_BROADCAST = valueOf("SO_BROADCAST");
     public static final ChannelOption<Boolean> SO_KEEPALIVE = valueOf("SO_KEEPALIVE");
     public static final ChannelOption<Integer> SO_SNDBUF = valueOf("SO_SNDBUF");
@@ -114,6 +130,7 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
     public static final ChannelOption<Integer> SO_BACKLOG = valueOf("SO_BACKLOG");
     public static final ChannelOption<Integer> SO_TIMEOUT = valueOf("SO_TIMEOUT");
 
+
     public static final ChannelOption<Integer> IP_TOS = valueOf("IP_TOS");
     public static final ChannelOption<InetAddress> IP_MULTICAST_ADDR = valueOf("IP_MULTICAST_ADDR");
     public static final ChannelOption<NetworkInterface> IP_MULTICAST_IF = valueOf("IP_MULTICAST_IF");
@@ -121,6 +138,8 @@ public class ChannelOption<T> extends AbstractConstant<ChannelOption<T>> {
     public static final ChannelOption<Boolean> IP_MULTICAST_LOOP_DISABLED = valueOf("IP_MULTICAST_LOOP_DISABLED");
 
     public static final ChannelOption<Boolean> TCP_NODELAY = valueOf("TCP_NODELAY");
+
+    // endregion
 
     @Deprecated
     public static final ChannelOption<Boolean> DATAGRAM_CHANNEL_ACTIVE_ON_REGISTRATION =

@@ -18,11 +18,16 @@ package io.netty.util;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * {@link Constant}的基本实现，制定了基本骨架(属性)，和比较实现。
+ *
  * Base implementation of {@link Constant}.
  */
 public abstract class AbstractConstant<T extends AbstractConstant<T>> implements Constant<T> {
-
+    /**
+     * 唯一id生成器，本进程唯一
+     */
     private static final AtomicLong uniqueIdGenerator = new AtomicLong();
+
     private final int id;
     private final String name;
     private final long uniquifier;

@@ -23,6 +23,8 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 /**
+ * (有点小疑问：netty中封装的特别多，对内存的占用也不小吧，好多的中间对象)
+ *
  * A special variant of {@link ThreadLocal} that yields higher access performance when accessed from a
  * {@link FastThreadLocalThread}.
  * <p>

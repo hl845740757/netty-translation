@@ -20,6 +20,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
+ * {@link DefaultAttributeMap}是{@link AttributeMap}的默认实现，它使用简单的锁分段技术
+ * 尽可能的保持内存负载尽可能的小。
+ *
  * Default {@link AttributeMap} implementation which use simple synchronization per bucket to keep the memory overhead
  * as low as possible.
  */

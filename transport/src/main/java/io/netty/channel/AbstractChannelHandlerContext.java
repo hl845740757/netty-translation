@@ -39,7 +39,14 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
         implements ChannelHandlerContext, ResourceLeakHint {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractChannelHandlerContext.class);
+    /**
+     * 下一个handler的缓存。
+     * 缓存还不一定增加了性能，而且复杂度高了好多，总得维护
+     */
     volatile AbstractChannelHandlerContext next;
+    /**
+     * 上一个handler的缓存
+     */
     volatile AbstractChannelHandlerContext prev;
 
     private static final AtomicIntegerFieldUpdater<AbstractChannelHandlerContext> HANDLER_STATE_UPDATER =
@@ -62,16 +69,33 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
      * nor {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
      */
     private static final int INIT = 0;
-
+    /**
+     * 是否是入站处理器(缓存起来提高性能)
+     */
     private final boolean inbound;
+    /**
+     * 是否服出站处理器(缓存起来提高性能)
+     */
     private final boolean outbound;
+    /**
+     * context绑定到的pipeine
+     */
     private final DefaultChannelPipeline pipeline;
+    /**
+     * context的唯一名字(或者说handler添加的时候的名字)
+     */
     private final String name;
+    /**
+     * context所关联的executor是否是有序提交的任务的
+     */
     private final boolean ordered;
 
     // Will be set to null if no child executor should be used, otherwise it will be set to the
     // child executor.
     final EventExecutor executor;
+    /**
+     * 已操作成功的future缓存
+     */
     private ChannelFuture succeededFuture;
 
     // Lazily instantiated tasks used to trigger events to a handler with different executor.

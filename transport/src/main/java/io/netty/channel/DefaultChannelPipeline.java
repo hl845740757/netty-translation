@@ -157,11 +157,13 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     public final ChannelPipeline addFirst(EventExecutorGroup group, String name, ChannelHandler handler) {
         final AbstractChannelHandlerContext newCtx;
         synchronized (this) {
+            // 检查是否可以重复添加
             checkMultiplicity(handler);
+            // 过滤名字
             name = filterName(name, handler);
-
+            // 为handler创建一个context
             newCtx = newContext(group, name, handler);
-
+            // 添加到链表头
             addFirst0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
@@ -179,10 +181,15 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
         }
+        // 调用handler添加到pipeline的事件
         callHandlerAdded0(newCtx);
         return this;
     }
 
+    /**
+     * 添加到列表首部(head节点之后)
+     * @param newCtx
+     */
     private void addFirst0(AbstractChannelHandlerContext newCtx) {
         AbstractChannelHandlerContext nextCtx = head.next;
         newCtx.prev = head;
@@ -196,14 +203,27 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return addLast(null, name, handler);
     }
 
+    /**
+     * 添加Channel的真正实现
+     *
+     * @param group    指定的用于执行{@link ChannelHandler}方法的{@link EventExecutorGroup}。
+     *                 the {@link EventExecutorGroup} which will be used to execute the {@link ChannelHandler}
+     *                 methods
+     * @param name     the name of the handler to append
+     * @param handler  the handler to append
+     *
+     * @return
+     */
     @Override
     public final ChannelPipeline addLast(EventExecutorGroup group, String name, ChannelHandler handler) {
+        // 为新的channel分配新的ctx
         final AbstractChannelHandlerContext newCtx;
         synchronized (this) {
+            // 检查是否可以重复添加
             checkMultiplicity(handler);
-
+            // 为handler分配context
             newCtx = newContext(group, filterName(name, handler), handler);
-
+            // 添加到链表尾部
             addLast0(newCtx);
 
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
@@ -221,10 +241,15 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
         }
+        // 触发handler添加到pipeline的事件
         callHandlerAdded0(newCtx);
         return this;
     }
 
+    /**
+     * 添加到链表尾部(tail前面)
+     * @param newCtx
+     */
     private void addLast0(AbstractChannelHandlerContext newCtx) {
         AbstractChannelHandlerContext prev = tail.prev;
         newCtx.prev = prev;
@@ -282,6 +307,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         if (name == null) {
             return generateName(handler);
         }
+        // 检查名字是否重复
         checkDuplicateName(name);
         return name;
     }
@@ -389,6 +415,11 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return this;
     }
 
+    /**
+     * 生成一个名字
+     * @param handler
+     * @return
+     */
     private String generateName(ChannelHandler handler) {
         Map<Class<?>, String> cache = nameCaches.get();
         Class<?> handlerType = handler.getClass();
@@ -594,6 +625,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         oldCtx.next = newCtx;
     }
 
+    /**
+     * 检查是否可以重复添加
+     * @param handler
+     */
     private static void checkMultiplicity(ChannelHandler handler) {
         if (handler instanceof ChannelHandlerAdapter) {
             ChannelHandlerAdapter h = (ChannelHandlerAdapter) handler;
@@ -606,8 +641,13 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         }
     }
 
+    /**
+     * 调用handler被添加的方法
+     * @param ctx
+     */
     private void callHandlerAdded0(final AbstractChannelHandlerContext ctx) {
         try {
+            // 这里触发handler的第一个事件，添加到context时
             ctx.callHandlerAdded();
         } catch (Throwable t) {
             boolean removed = false;
@@ -1062,6 +1102,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         return voidPromise;
     }
 
+    /**
+     * 检查名字是否重复
+     * @param name
+     */
     private void checkDuplicateName(String name) {
         if (context0(name) != null) {
             throw new IllegalArgumentException("Duplicate handler name: " + name);

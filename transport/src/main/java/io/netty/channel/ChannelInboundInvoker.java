@@ -17,10 +17,22 @@ package io.netty.channel;
 
 /**
  * Channel入站事件调用者
+ * (入站事件传递)
+ *
+ * // {@link Channel}的{@link ChannelPipeline}包含的下一个{@link ChannelInboundHandler}
+ *
+ * // the next {@link ChannelInboundHandler} contained in the  {@link ChannelPipeline} of the
+ * // {@link Channel}
  */
 public interface ChannelInboundInvoker {
 
     /**
+     * 事件：一个{@link Channel}注册到了它的{@link EventLoop}.
+     * 一个{@link Channel}会注册并且只会注册到一个{@link EventLoop}。<p>
+     *
+     * 这将导致{@link Channel}的{@link ChannelPipeline}包含的下一个{@link ChannelInboundHandler}的
+     * {@link ChannelInboundHandler#channelRegistered(ChannelHandlerContext)}方法被调用。<p>
+     *
      * A {@link Channel} was registered to its {@link EventLoop}.
      *
      * This will result in having the  {@link ChannelInboundHandler#channelRegistered(ChannelHandlerContext)} method
@@ -30,6 +42,10 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelRegistered();
 
     /**
+     * 一个{@link Channel}从它的 {@link EventLoop}上取消注册。
+     * 这将导致{@link Channel}的{@link ChannelPipeline}包含的下一个{@link ChannelInboundHandler}的
+     * {@link ChannelInboundHandler#channelUnregistered(ChannelHandlerContext)}方法被调用。<p>
+     *
      * A {@link Channel} was unregistered from its {@link EventLoop}.
      *
      * This will result in having the  {@link ChannelInboundHandler#channelUnregistered(ChannelHandlerContext)} method
@@ -39,6 +55,8 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelUnregistered();
 
     /**
+     * 一个{@link Channel} 当前激活了，它意味着建立好了连接。<p></p>
+     *
      * A {@link Channel} is active now, which means it is connected.
      *
      * This will result in having the  {@link ChannelInboundHandler#channelActive(ChannelHandlerContext)} method
@@ -48,7 +66,8 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelActive();
 
     /**
-     * A {@link Channel} is inactive now, which means it is closed.
+     * 一个{@link Channel} 当前不再活动，它意味着channel关闭了(断开连接)。
+     * A {@link Channel} is inactive now, which means it is closed。<p></p>
      *
      * This will result in having the  {@link ChannelInboundHandler#channelInactive(ChannelHandlerContext)} method
      * called of the next  {@link ChannelInboundHandler} contained in the  {@link ChannelPipeline} of the
@@ -57,6 +76,8 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelInactive();
 
     /**
+     * 一个{@link Channel}在它的入站操作中接收了一个{@link Throwable}异常。<p></p>
+     *
      * A {@link Channel} received an {@link Throwable} in one of its inbound operations.
      *
      * This will result in having the  {@link ChannelInboundHandler#exceptionCaught(ChannelHandlerContext, Throwable)}
@@ -66,6 +87,8 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireExceptionCaught(Throwable cause);
 
     /**
+     * 一个{@link Channel}接收到了一个用户定义的事件。<p></p>
+     *
      * A {@link Channel} received an user defined event.
      *
      * This will result in having the  {@link ChannelInboundHandler#userEventTriggered(ChannelHandlerContext, Object)}
@@ -75,6 +98,8 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireUserEventTriggered(Object event);
 
     /**
+     * 一个{@link Channel}接收到了一个信息。<p></p>
+     *
      * A {@link Channel} received a message.
      *
      * This will result in having the {@link ChannelInboundHandler#channelRead(ChannelHandlerContext, Object)}
@@ -84,12 +109,16 @@ public interface ChannelInboundInvoker {
     ChannelInboundInvoker fireChannelRead(Object msg);
 
     /**
+     * {@link Channel}本次读操作读取完毕。<p></p>
+     *
      * Triggers an {@link ChannelInboundHandler#channelReadComplete(ChannelHandlerContext)}
      * event to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      */
     ChannelInboundInvoker fireChannelReadComplete();
 
     /**
+     * {@link Channel}的可写状态发生了改变。 <p></p>
+     *
      * Triggers an {@link ChannelInboundHandler#channelWritabilityChanged(ChannelHandlerContext)}
      * event to the next {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
      */

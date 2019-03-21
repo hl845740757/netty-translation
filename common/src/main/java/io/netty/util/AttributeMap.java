@@ -16,18 +16,29 @@
 package io.netty.util;
 
 /**
- * Holds {@link Attribute}s which can be accessed via {@link AttributeKey}.
+ * {@link AttributeMap}是{@link Attribute}的持有者，{@link Attribute}可以通过{@link AttributeKey}访问。
+ * 实现必须是线程安全的。
  *
+ * Holds {@link Attribute}s which can be accessed via {@link AttributeKey}.
  * Implementations must be Thread-safe.
  */
 public interface AttributeMap {
     /**
+     * {@link java.util.Map#get(Object)}
+     *
+     * 返回给定的{@link AttributeKey}对应的{@link Attribute}。该方法返回值永远不为null。
+     * 但是返回的{@link Attribute}中的值可能未被赋值。也就是说{@link Attribute#get()}可能返回Null。
+     *
      * Get the {@link Attribute} for the given {@link AttributeKey}. This method will never return null, but may return
      * an {@link Attribute} which does not have a value set yet.
      */
     <T> Attribute<T> attr(AttributeKey<T> key);
 
     /**
+     * {@link java.util.Map#containsKey(Object)}
+     *
+     * 如果 {@link AttributeMap}中存在给定{@link AttributeKey}的{@link Attribute}时返回true。
+     *
      * Returns {@code} true if and only if the given {@link Attribute} exists in this {@link AttributeMap}.
      */
     <T> boolean hasAttr(AttributeKey<T> key);

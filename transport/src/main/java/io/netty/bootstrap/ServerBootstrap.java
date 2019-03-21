@@ -241,7 +241,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
 
     /**
      * ServerBootstrapAcceptor是一个特殊的入站处理器。
-     * 它负责将接收到的连接(childChannel)分发给childGroup(Sub Reactor)
+     * 它负责将接收到的连接(childChannel)分发给childGroup(Sub Reactor)。
+     * 对应《Scalable IO In Java》中的Acceptor。
      */
     private static class ServerBootstrapAcceptor extends ChannelInboundHandlerAdapter {
 

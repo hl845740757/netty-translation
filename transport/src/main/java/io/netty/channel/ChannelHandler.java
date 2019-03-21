@@ -199,6 +199,7 @@ public interface ChannelHandler {
 
     /**
      * 当{@link ChannelHandler}被添加到真实的上下文中并准备处理事件时被调用。
+     * （未指明上下文类型，上下文可能不同）
      *
      * Gets called after the {@link ChannelHandler} was added to the actual context and it's ready to handle events.
      */
@@ -224,6 +225,16 @@ public interface ChannelHandler {
     void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception;
 
     /**
+     * 表示被{@link Sharable}注释的同一个{@link ChannelHandler}实例可以被添加到
+     * 一个或多个{@link ChannelPipeline}中，而不会产生竞态条件。
+     * <p>
+     * 如果没有指定该注解，你必须在每次添加handler到pipeline都必须创建一个新的handler。
+     * 因为它作为成员变量是非共享的状态。
+     * <p>
+     * 该注解提供文件目的的支持，就像
+     * <a href="http://www.javaconcurrencyinpractice.com/annotations/doc/">the JCIP annotations</a>
+     * <pre>
+     *
      * Indicates that the same instance of the annotated {@link ChannelHandler}
      * can be added to one or more {@link ChannelPipeline}s multiple times
      * without a race condition.

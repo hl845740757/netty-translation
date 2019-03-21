@@ -16,6 +16,9 @@
 package io.netty.util;
 
 /**
+ * {@link AttributeKey}作为key用于访问{@link AttributeMap}中的{@link Attribute}。
+ * 注意，相同的名字不能有多个{@link AttributeKey}。
+ *
  * Key which can be used to access {@link Attribute} out of the {@link AttributeMap}. Be aware that it is not be
  * possible to have multiple keys with the same name.
  *
@@ -32,6 +35,8 @@ public final class AttributeKey<T> extends AbstractConstant<AttributeKey<T>> {
     };
 
     /**
+     * 返回给定名字的{@link AttributeKey}的单例对象。
+     *
      * Returns the singleton instance of the {@link AttributeKey} which has the specified {@code name}.
      */
     @SuppressWarnings("unchecked")
@@ -40,6 +45,8 @@ public final class AttributeKey<T> extends AbstractConstant<AttributeKey<T>> {
     }
 
     /**
+     * 如果给定{@code name}的{@link AttributeKey}存在，则返回true.
+     *
      * Returns {@code true} if a {@link AttributeKey} exists for the given {@code name}.
      */
     public static boolean exists(String name) {
@@ -47,6 +54,9 @@ public final class AttributeKey<T> extends AbstractConstant<AttributeKey<T>> {
     }
 
     /**
+     * 使用给定的名字创建一个{@link AttributeKey}。
+     * 如果给定名字的{@link AttributeKey}已存在，则抛出一个{@link IllegalArgumentException}异常。
+     *
      * Creates a new {@link AttributeKey} for the given {@code name} or fail with an
      * {@link IllegalArgumentException} if a {@link AttributeKey} for the given {@code name} exists.
      */
@@ -55,6 +65,16 @@ public final class AttributeKey<T> extends AbstractConstant<AttributeKey<T>> {
         return (AttributeKey<T>) pool.newInstance(name);
     }
 
+    /**
+     一个快捷调用方式。
+     * 将{@code firstNameComponent.getName() + "#" + secondNameComponent} 构成新的key;
+     * 再调用 {@link #valueOf(String)}方法
+     *
+     * @param firstNameComponent
+     * @param secondNameComponent
+     * @param <T>
+     * @return
+     */
     @SuppressWarnings("unchecked")
     public static <T> AttributeKey<T> valueOf(Class<?> firstNameComponent, String secondNameComponent) {
         return (AttributeKey<T>) pool.valueOf(firstNameComponent, secondNameComponent);

@@ -16,6 +16,9 @@
 package io.netty.util;
 
 /**
+ * 一个{@link Attribute} 允许存储一个对象引用。它支持原子方式更新，因此它是线程安全的。
+ * (其实就是一个 {@link java.util.concurrent.atomic.AtomicReference})
+ *
  * An attribute which allows to store a value reference. It may be updated atomically and so is thread-safe.
  *
  * @param <T>   the type of the value it holds.
