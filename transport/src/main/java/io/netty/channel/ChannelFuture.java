@@ -215,7 +215,7 @@ public interface ChannelFuture extends Future<Void> {
 
     /**
      * 返回与该Future关联的IO操作的Channel
-     *
+     * (观察者获取主题对象)
      * Returns a channel where the I/O operation associated with this
      * future takes place.
      */

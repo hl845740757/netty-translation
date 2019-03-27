@@ -50,6 +50,13 @@ public abstract class TypeParameterMatcher {
         return matcher;
     }
 
+    /**
+     * 获取对象的类型匹配器
+     * @param object 实例对象
+     * @param parametrizedSuperclass 对象的超类，必须是超类，Netty的实现中，不支持接口中查找
+     * @param typeParamName parametrizedSuperclass中定义的泛型参数名字
+     * @return
+     */
     public static TypeParameterMatcher find(
             final Object object, final Class<?> parametrizedSuperclass, final String typeParamName) {
 
@@ -72,6 +79,13 @@ public abstract class TypeParameterMatcher {
         return matcher;
     }
 
+    /**
+     * 获取对象的类型匹配器的真正实现
+     * @param object 实例对象
+     * @param parametrizedSuperclass 对象的超类，必须是超类，Netty的实现中，不支持接口中查找
+     * @param typeParamName parametrizedSuperclass中定义的泛型参数名字
+     * @return
+     */
     private static Class<?> find0(
             final Object object, Class<?> parametrizedSuperclass, String typeParamName) {
 

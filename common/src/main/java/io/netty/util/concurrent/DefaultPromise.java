@@ -547,6 +547,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     /**
+     * 检查是否有线程在改Promise上进行等待，若有，则进行唤醒。
+     * 如果有listener在该promise上监听则返回true，否则返回false
+     *
      * Check if there are any waiters and if so notify these.
      * @return {@code true} if there are any listeners attached to the promise, {@code false} otherwise.
      */

@@ -44,7 +44,11 @@ import io.netty.util.concurrent.GenericFutureListener;
  */
 public interface ChannelFutureListener extends GenericFutureListener<ChannelFuture> {
 
+    // 定义了三个可共享的常量，类本身并没有什么逻辑，只是指定了泛型参数
+
     /**
+     * 在{@link ChannelFuture}关联的操作结束的时候关闭Channel
+     *
      * A {@link ChannelFutureListener} that closes the {@link Channel} which is
      * associated with the specified {@link ChannelFuture}.
      */
@@ -56,6 +60,8 @@ public interface ChannelFutureListener extends GenericFutureListener<ChannelFutu
     };
 
     /**
+     * 在{@link ChannelFuture}关联的操作以失败结束的时候，关闭Channel
+     *
      * A {@link ChannelFutureListener} that closes the {@link Channel} when the
      * operation ended up with a failure or cancellation rather than a success.
      */
@@ -69,6 +75,10 @@ public interface ChannelFutureListener extends GenericFutureListener<ChannelFutu
     };
 
     /**
+     * {@link ChannelFutureListener}将{@link ChannelFuture}的{@link Throwable}转发到{@link ChannelPipeline}。
+     * 这模仿了Netty 3的旧行为。
+     * (转发Future关联的操作的异常到pipeline)
+     *
      * A {@link ChannelFutureListener} that forwards the {@link Throwable} of the {@link ChannelFuture} into the
      * {@link ChannelPipeline}. This mimics the old behavior of Netty 3.
      */

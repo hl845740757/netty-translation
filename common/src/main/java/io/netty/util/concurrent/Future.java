@@ -20,14 +20,14 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Future通常代表的是异步、支持取消、获取执行结果的任务的凭证。
- *
  * Future模式:
+ * Future通常代表的是异步的、支持取消的、可获取执行结果的任务的凭证。
  *
  * 1.简单的Future模式是没有回调的，如JDK的Future。无回调的Future简单安全，没有线程安全问题。
  *
- * 2.Future模式也可以提供回调机制，提供回调的话，是存在线程安全问题的，因此监听器的实现呢一定要保证线程安全；
- * 此外，由于添加了回调，如果某一个回调方法执行时间过长或阻塞，或抛出异常等都将威胁到系统的安全性(如：其它监听者丢失信号)
+ * 2.Future模式也可以提供回调机制，提供回调的话，是存在线程安全问题的，因此监听器的实现呢一定要保证线程安全，
+ * 因为调用回调方法的线程通常不是我们的逻辑线程/业务线程。此外，由于添加了回调，如果某一个回调方法执行时间过长或阻塞，
+ * 或抛出异常等都将威胁到系统的安全性(如：其它监听者丢失信号)，通知操作在实现上必须保证安全。
  *
  * 3.添加回调机制其实就是观察者模式，涉及到使用观察者模式和不使用观察者模式的优劣议题。不使用观察者模式，就需要使用轮询的方式
  * 去获取类似的功能，其缺点是：轮询间隔时间过长；则响应性低，若轮询时间过短，则消耗大量的CPU资源。
@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
  *  怎么设计以及使用都需要仔细斟酌,毕竟有得必有失。
  * (简单一般容易保证安全性，对开发者要求不高。便捷的方法往往潜在着危险，对开发者素质要求较高。)
  *
- * JDK的Channel最大的问题就是不知道任务何时完成。
+ * JDK的Future最大的问题就是不知道任务何时完成。
  * Netty对JDK的Future进行了扩展，添加了事件完成的回调机制。Netty也推荐大家使用回调机制监听计算的完成事件。
  *
  * Netty的Future提供了一些方便开发者使用的接口。
@@ -105,8 +105,8 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
     Future<V> removeListeners(GenericFutureListener<? extends Future<? super V>>... listeners);
 
     /**
-     * 等待 直到当前Future计算完成 或者 当前Future由于已经失败重新抛出异常。其实相当于get,换了个语法糖
-     * 返回的是自己。
+     * 等待 直到当前Future计算完成 或者 当前Future由于已经失败重新抛出异常。
+     * 某些情况下必须等待操作已完成才能继续时，sync方法会很有用。
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
      */

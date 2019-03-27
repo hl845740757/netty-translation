@@ -17,10 +17,22 @@ package io.netty.util.concurrent;
 
 import java.util.Arrays;
 
+/**
+ * FutureListener的容器，当超过一个Listener进行监听时，使用该对象将它们聚合起来。
+ * 方便统一管理。
+ */
 final class DefaultFutureListeners {
-
+    /**
+     * listener数组，会自动扩容，容量大于等于实际listener数量。
+     */
     private GenericFutureListener<? extends Future<?>>[] listeners;
+    /**
+     * 有效的listener数量
+     */
     private int size;
+    /**
+     * 需要处理的方法个数
+     */
     private int progressiveSize; // the number of progressive listeners
 
     @SuppressWarnings("unchecked")
@@ -30,6 +42,7 @@ final class DefaultFutureListeners {
         listeners[0] = first;
         listeners[1] = second;
         size = 2;
+        // 该类型需要进行额外的处理
         if (first instanceof GenericProgressiveFutureListener) {
             progressiveSize ++;
         }

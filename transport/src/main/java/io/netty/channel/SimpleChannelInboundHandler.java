@@ -19,6 +19,9 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.TypeParameterMatcher;
 
 /**
+ * {@link SimpleChannelInboundHandler} 允许你明确的只处理特定类型的消息。
+ * {@link TypeParameterMatcher} 才是真正的核心。可以扩展到各个地方。在我的项目中，对它进行了扩展。
+ *
  * {@link ChannelInboundHandlerAdapter} which allows to explicit only handle a specific type of messages.
  *
  * For example here is an implementation which only handle {@link String} messages.
@@ -35,9 +38,20 @@ import io.netty.util.internal.TypeParameterMatcher;
  *     }
  * </pre>
  *
+ * 注意，将调用{@link ReferenceCountUtil#release(Object)}释放所有处理完的消息依赖于构造方法的参数。
+ * 在这种情况下，如果你希望传递消息到{@link ChannelPipeline}中的下一个handler，你可以使用
+ * {@link ReferenceCountUtil#retain(Object)}。
+ * <p>
+ *
  * Be aware that depending of the constructor parameters it will release all handled messages by passing them to
  * {@link ReferenceCountUtil#release(Object)}. In this case you may need to use
  * {@link ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the {@link ChannelPipeline}.
+ *
+ * <h3>未来的兼容性通知</h3>
+ * <p>
+ * 请注意，{@link #channelRead0(ChannelHandlerContext, I)}将会在下一个版本 5.0中重命名为
+ * {@code messageReceived(ChannelHandlerContext, I)}
+ * <p>
  *
  * <h3>Forward compatibility notice</h3>
  * <p>
@@ -46,11 +60,17 @@ import io.netty.util.internal.TypeParameterMatcher;
  * </p>
  */
 public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandlerAdapter {
-
+    /**
+     * 类型参数匹配器
+     */
     private final TypeParameterMatcher matcher;
+    /**
+     * 是否字段是否资源
+     */
     private final boolean autoRelease;
 
     /**
+     * 默认自动释放资源
      * see {@link #SimpleChannelInboundHandler(boolean)} with {@code true} as boolean parameter.
      */
     protected SimpleChannelInboundHandler() {
@@ -88,8 +108,8 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
     }
 
     /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be passed to the next
-     * {@link ChannelInboundHandler} in the {@link ChannelPipeline}.
+     * 如果给定的消息应该被处理，则返回true。如果消息需要被传递到{@link ChannelPipeline}中的下一个
+     * {@link ChannelInboundHandler}则返回false。
      */
     public boolean acceptInboundMessage(Object msg) throws Exception {
         return matcher.match(msg);
@@ -100,6 +120,7 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
         boolean release = true;
         try {
             if (acceptInboundMessage(msg)) {
+                // 如果消息可以被接收
                 @SuppressWarnings("unchecked")
                 I imsg = (I) msg;
                 channelRead0(ctx, imsg);
@@ -108,6 +129,7 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
                 ctx.fireChannelRead(msg);
             }
         } finally {
+            // 如果设置了自动释放，并且消息已被处理，则尝试释放资源
             if (autoRelease && release) {
                 ReferenceCountUtil.release(msg);
             }

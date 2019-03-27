@@ -24,6 +24,10 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         return new RunnableAdapter<T>(runnable, result);
     }
 
+    /**
+     * 这个和Executors中的RunnableAdapter基本一样
+     * @param <T>
+     */
     private static final class RunnableAdapter<T> implements Callable<T> {
         final Runnable task;
         final T result;
