@@ -25,12 +25,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- *  用多线程同时处理任务的{@link EventExecutor}的基本抽象实现。
- *  它继承了{@link AbstractEventExecutorGroup}，也就是说，多线程的EventExecutor是容器节点，
- *  本身不负责业务/事件的处理，而是单纯将事件分派给它的子节点。
- *  它的主要工作就是分派事件和管理子节点的生命周期。
- *
- *  对应的应该是单线程的事件处理器 {@link SingleThreadEventExecutor}
+ * <p>
+ *  用多线程同时处理任务的{@link EventExecutorGroup}的基本抽象实现。
+ *  XXXGroup表示的是它是一个容器节点。
+ * <p>
+ *  它的实现逻辑也很简单，它持有多个{@link EventExecutor}，本身不负责业务/事件的处理，
+ *  而是单纯将任务分派给它的子节点。然后负责管理子节点的生命周期即可。
+ * <p>
+ *  与之对应的是单线程的事件处理器 {@link SingleThreadEventExecutor}
+ * <p>
  *
  * Abstract base class for {@link EventExecutorGroup} implementations that handles their tasks with multiple threads at
  * the same time.
@@ -38,7 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class MultithreadEventExecutorGroup extends AbstractEventExecutorGroup {
 
     /**
-     * 包含的子节点们，用数组，方便分配下一个EventExecutor
+     * 包含的子节点们，用数组，方便分配下一个EventExecutor(通过计算索引来分配)
      */
     private final EventExecutor[] children;
     /**
@@ -46,7 +49,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      */
     private final Set<EventExecutor> readonlyChildren;
     /**
-     * 已关闭的子节点的数量
+     * 进入终止状态的子节点数量
      */
     private final AtomicInteger terminatedChildren = new AtomicInteger();
     /**

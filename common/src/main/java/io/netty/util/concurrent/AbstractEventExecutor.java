@@ -29,10 +29,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * {@link EventExecutor}的抽象实现。
+ * 它是叶子节点的顶层超类。
+ *
  * 它继承了{@link AbstractExecutorService}，并实现了{@link EventExecutor}。
  * 融合了两者的语义 => AbstractEventExecutor 是一个处理事件的ExecutorService
  *
- * 它是叶子节点的顶层超类
  *
  * Abstract base class for {@link EventExecutor} implementations.
  */
@@ -130,6 +131,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
         return new FailedFuture<V>(this, cause);
     }
 
+    // region 重写 AbstractExecutorService中的部分方法,返回特定的Future类型
     @Override
     public Future<?> submit(Runnable task) {
         return (Future<?>) super.submit(task);
@@ -154,7 +156,10 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     protected final <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
         return new PromiseTask<T>(this, callable);
     }
+    // endregion
 
+    // region 屏蔽掉默认实现，要求子类必须复写
+    // 其实也可以直接声明为抽象方法啊，默认抛错不喜欢
     @Override
     public ScheduledFuture<?> schedule(Runnable command, long delay,
                                        TimeUnit unit) {
@@ -175,6 +180,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
         throw new UnsupportedOperationException();
     }
+    // endregion
 
     /**
      * Try to execute the given {@link Runnable} and just log if it throws a {@link Throwable}.

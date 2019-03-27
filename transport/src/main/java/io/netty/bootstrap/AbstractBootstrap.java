@@ -375,7 +375,9 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
+        // 这里尝试将该Bootstrap管理的channel注册到它的group上。
         ChannelFuture regFuture = config().group().register(channel);
+
         // 这里并没有进行任何的等待
         if (regFuture.cause() != null) {
             // 产生了异常

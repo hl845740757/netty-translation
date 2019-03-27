@@ -17,7 +17,13 @@ package io.netty.util.concurrent;
 
 import io.netty.util.internal.ObjectUtil;
 
+/**
+ * 对Runnable进行封装/代理
+ */
 final class FastThreadLocalRunnable implements Runnable {
+    /**
+     * 被代理的Runnable
+     */
     private final Runnable runnable;
 
     private FastThreadLocalRunnable(Runnable runnable) {

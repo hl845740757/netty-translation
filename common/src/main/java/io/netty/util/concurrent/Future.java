@@ -35,10 +35,12 @@ import java.util.concurrent.TimeUnit;
  *  怎么设计以及使用都需要仔细斟酌,毕竟有得必有失。
  * (简单一般容易保证安全性，对开发者要求不高。便捷的方法往往潜在着危险，对开发者素质要求较高。)
  *
+ * JDK的Channel最大的问题就是不知道任务何时完成。
  * Netty对JDK的Future进行了扩展，添加了事件完成的回调机制。Netty也推荐大家使用回调机制监听计算的完成事件。
  *
- * The result of an asynchronous operation.
+ * Netty的Future提供了一些方便开发者使用的接口。
  *
+ * The result of an asynchronous operation.
  */
 @SuppressWarnings("ClassNameSameAsAncestorName")
 public interface Future<V> extends java.util.concurrent.Future<V> {

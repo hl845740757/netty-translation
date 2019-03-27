@@ -20,6 +20,10 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * {@link SingleThreadEventLoop}的默认实现，它是最简单的实现。
+ * 它只是简单的从队列中取任务，执行。
+ */
 public class DefaultEventLoop extends SingleThreadEventLoop {
 
     public DefaultEventLoop() {

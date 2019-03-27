@@ -26,8 +26,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 继承AbstractEventExecutor，对它的含义进一步具体化。支持事件的调度处理。
- * 实现 {@link java.util.concurrent.ScheduledExecutorService}。
+ * 继承AbstractEventExecutor，对它的含义进一步具体化。
+ * 实现了{@link java.util.concurrent.ScheduledExecutorService}中的方法，支持事件的调度处理。
  *
  * Abstract base class for {@link EventExecutor}s that want to support scheduling.
  */

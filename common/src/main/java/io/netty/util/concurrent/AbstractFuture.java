@@ -21,6 +21,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
+ * {@link Future}的抽象实现。
+ * 统一实现了get()方法。
+ *
  * Abstract {@link Future} implementation which does not allow for cancellation.
  *
  * @param <V>

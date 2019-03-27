@@ -24,6 +24,9 @@ import io.netty.util.concurrent.GenericFutureListener;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
+ * {@link ChannelPromise}的默认实现。
+ * 推荐使用{@link Channel#newPromise()}的方法创建{@link ChannelPromise} 而不是显示地调用构造方法。
+ *
  * The default {@link ChannelPromise} implementation.  It is recommended to use {@link Channel#newPromise()} to create
  * a new {@link ChannelPromise} rather than calling the constructor explicitly.
  */

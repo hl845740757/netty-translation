@@ -45,7 +45,15 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 /**
  * 单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
  *
- * 相对的是{@link MultithreadEventExecutorGroup}
+ * 它的实现很简单：就是提交一个任务到给定Executor。一般该任务就是个死循环，因此给定的Executor必须能创建足够多的线程，否则会无法执行。
+ * <li>它真正的处理所有的提交的任务或事件。</li>
+ * <li>与之相对的是{@link MultithreadEventExecutorGroup}</li>
+ *
+ * 那为什么会觉得有点别扭呢？
+ * {@link SingleThreadEventExecutor}是一个单线程的Executor,它只有一个线程，
+ * 只是它的线程不是自己创建的，也不是使用线程工厂创建的，而是通过提交一个死循环的任务到被包装的Executor得到的。
+ * 包装的有点厉害。
+ * <p>
  *
  * Abstract base class for {@link OrderedEventExecutor}'s that execute all its submitted tasks in a single thread.
  *
@@ -83,9 +91,18 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             AtomicReferenceFieldUpdater.newUpdater(
                     SingleThreadEventExecutor.class, ThreadProperties.class, "threadProperties");
 
+    /**
+     * 该线程待执行的任务。核心属性
+     */
     private final Queue<Runnable> taskQueue;
-
+    /**
+     * 该executor持有的线程。核心属性
+     *
+     * 使用volatile的原因是：该属性由创建的新线程赋值，但是可以被外部线程访问到。
+     * {@link #inEventLoop(Thread)} 这里存在可见性问题，因此需要volatile
+     */
     private volatile Thread thread;
+
     @SuppressWarnings("unused")
     private volatile ThreadProperties threadProperties;
     private final Executor executor;
@@ -472,7 +489,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
-     *
+     * 真正的逻辑代码。
      */
     protected abstract void run();
 
@@ -491,6 +508,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    /**
+     *
+     * @param thread
+     * @return
+     */
     @Override
     public boolean inEventLoop(Thread thread) {
         return thread == this.thread;
@@ -862,6 +884,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private static final long SCHEDULE_PURGE_INTERVAL = TimeUnit.SECONDS.toNanos(1);
 
+    /**
+     * 如果未启动的话，启动线程
+     */
     private void startThread() {
         if (state == ST_NOT_STARTED) {
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
@@ -895,9 +920,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void doStartThread() {
         assert thread == null;
+        // 在这里提交一个任务，回调到自身的run逻辑
         executor.execute(new Runnable() {
             @Override
             public void run() {
+                // 在这里赋值，EventExecutor之外可以被访问，所以需要为volatile变量。
                 thread = Thread.currentThread();
                 if (interrupted) {
                     thread.interrupt();

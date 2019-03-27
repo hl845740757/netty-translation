@@ -270,7 +270,7 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
 
     /**
      * 不再被使用，请使用{@link Channel#attr(AttributeKey)}。
-     * 个人觉得其原因就是因为容易导致误解，更普遍的运用的应该是在channel上传递/存储数据，所以建议直接使用
+     * 个人觉得其原因就是因为容易导致误用，更普遍的运用的应该是在channel上传递/存储数据，所以建议直接使用
      * channel上的方法。
      *
      * @deprecated Use {@link Channel#attr(AttributeKey)}

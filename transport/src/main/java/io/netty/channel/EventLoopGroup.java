@@ -25,6 +25,10 @@ import io.netty.util.concurrent.EventExecutorGroup;
  * 1.允许在事件循环期间动态的注册channel
  * 2.这些新注册的channel会在下一次selection操作的时候生效。(selector 的某一种select操作)
  *
+ * {@link EventLoopGroup} 实现{@link EventExecutorGroup}，使其更加具体化。
+ * {@link EventExecutorGroup}是{@link io.netty.util.concurrent.EventExecutor}的容器，
+ * 而{@link EventLoopGroup} 是 {@link EventLoop}的容器。并定义了{@link Channel}的注册接口。
+ *
  * Special {@link EventExecutorGroup} which allows registering {@link Channel}s that get
  * processed for later selection during the event loop.
  *

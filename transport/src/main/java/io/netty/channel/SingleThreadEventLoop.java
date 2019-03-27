@@ -27,8 +27,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Abstract base class for {@link EventLoop}s that execute all its submitted tasks in a single thread.
+ * 继承{@link SingleThreadEventExecutor}并实现{@link EventLoop}，结合二者的概念。
+ * 实现上将特定方法的返回值定义为更具体的类型。(EventLoop)
  *
+ * 它是EventLoop所有实现类的超类。它是{@link MultithreadEventLoopGroup}的子节点。
+ *
+ * Abstract base class for {@link EventLoop}s that execute all its submitted tasks in a single thread.
  */
 public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor implements EventLoop {
 

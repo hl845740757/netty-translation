@@ -480,6 +480,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             if (eventLoop == null) {
                 throw new NullPointerException("eventLoop");
             }
+            // 已经注册
             if (isRegistered()) {
                 promise.setFailure(new IllegalStateException("registered to an event loop already"));
                 return;
@@ -490,12 +491,15 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                         new IllegalStateException("incompatible event loop type: " + eventLoop.getClass().getName()));
                 return;
             }
-
+            // 将EventLoop对象引用赋值给Channel。
             AbstractChannel.this.eventLoop = eventLoop;
-            // 当前线程是否是EventLoop中的线程
+
             if (eventLoop.inEventLoop()) {
+                // 注册的线程就是EventLoop线程，可直接注册
                 register0(promise);
             } else {
+                // 提交注册请求的不是EventLoop线程，提交到对应的EventLoop上。(保证线程安全)
+                // 提交操作是线程安全的，遵守happens-before原则
                 try {
                     eventLoop.execute(new Runnable() {
                         @Override
@@ -514,6 +518,10 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
         }
 
+        /**
+         * 当前线程就是EventLoop线程
+         * @param promise
+         */
         private void register0(ChannelPromise promise) {
             try {
                 // check if the channel is still open as it could be closed in the mean time when the register
@@ -1092,6 +1100,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
     /**
      * 如果给定的{@link EventLoop}是兼容的则返回True.
+     * Channel可使用的EventLoop类型是确定的。看似能自由组装，其实是有内在关联的。
+     * (类似：Executor的拒绝策略中 丢弃最老不能和优先级队列一起使用)
+     *
      * Return {@code true} if the given {@link EventLoop} is compatible with this instance.
      */
     protected abstract boolean isCompatible(EventLoop loop);

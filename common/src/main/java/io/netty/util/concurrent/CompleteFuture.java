@@ -19,7 +19,8 @@ package io.netty.util.concurrent;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 一个{@link Future}的骨架(模板)实现，它表示该 {@link Future}早已执行完毕。
+ * 一个{@link Future}的骨架(模板)实现，它表示该 {@link Future}对应的操作早已执行完毕。
+ * (完成分为：失败，取消，成功)
  *
  * 它的方法都比较简单，不做详细的解释了。
  *

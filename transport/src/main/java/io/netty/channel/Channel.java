@@ -305,30 +305,47 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
         RecvByteBufAllocator.Handle recvBufAllocHandle();
 
         /**
+         * 返回Channel绑定到的本地{@link SocketAddress}。
+         * 如果未绑定的话返回null
+         *
          * Return the {@link SocketAddress} to which is bound local or
          * {@code null} if none.
          */
         SocketAddress localAddress();
 
         /**
+         * 返回Channel连接到的远程{@link SocketAddress}。
+         * 如果未连接的话返回null
+         *
          * Return the {@link SocketAddress} to which is bound remote or
          * {@code null} if none is bound yet.
          */
         SocketAddress remoteAddress();
 
         /**
+         * 将{@link ChannelPromise}中的{@link Channel}注册到{@link EventLoop}。
+         * 并且在注册完成时通知{@link ChannelFuture}/{@link ChannelPromise}
+         *
          * Register the {@link Channel} of the {@link ChannelPromise} and notify
          * the {@link ChannelFuture} once the registration was complete.
          */
         void register(EventLoop eventLoop, ChannelPromise promise);
 
         /**
+         * 将{@link ChannelPromise}中的{@link Channel}绑定到本地{@link SocketAddress}。
+         * 并且在操作完成时通知{@link ChannelFuture}/{@link ChannelPromise}
+         *
          * Bind the {@link SocketAddress} to the {@link Channel} of the {@link ChannelPromise} and notify
          * it once its done.
          */
         void bind(SocketAddress localAddress, ChannelPromise promise);
 
         /**
+         * 将{@link ChannelPromise}中的{@link Channel}连接到远端的{@link SocketAddress}。
+         * 如果必须绑定到指定的本地{@link SocketAddress}，那么需要作为参数传入，其它情况传入null。
+         *
+         * 在连接完成一旦将会通知{@link ChannelFuture}/{@link ChannelPromise}。
+         *
          * Connect the {@link Channel} of the given {@link ChannelFuture} with the given remote {@link SocketAddress}.
          * If a specific local {@link SocketAddress} should be used it need to be given as argument. Otherwise just
          * pass {@code null} to it.

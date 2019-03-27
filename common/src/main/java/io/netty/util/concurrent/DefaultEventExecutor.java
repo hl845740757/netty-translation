@@ -19,6 +19,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
+ * 默认的{@link SingleThreadEventExecutor}实现，它仅仅以有序的方式执行所有提交的任务。
+ *
  * Default {@link SingleThreadEventExecutor} implementation which just execute all submitted task in a
  * serial fashion.
  */
@@ -58,6 +60,9 @@ public final class DefaultEventExecutor extends SingleThreadEventExecutor {
         super(parent, executor, true, maxPendingTasks, rejectedExecutionHandler);
     }
 
+    /**
+     * 简单的从队列中取任务，执行。
+     */
     @Override
     protected void run() {
         for (;;) {

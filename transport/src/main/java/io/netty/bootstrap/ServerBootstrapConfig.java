@@ -25,6 +25,8 @@ import io.netty.util.internal.StringUtil;
 import java.util.Map;
 
 /**
+ * 暴露一些接口，获取启动时的配置信息。
+ *
  * Exposes the configuration of a {@link ServerBootstrapConfig}.
  */
 public final class ServerBootstrapConfig extends AbstractBootstrapConfig<ServerBootstrap, ServerChannel> {

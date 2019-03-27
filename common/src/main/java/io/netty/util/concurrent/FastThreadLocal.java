@@ -23,6 +23,8 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 /**
+ * 一个特殊的{@link ThreadLocal}，通过{@link FastThreadLocalThread}访问可获得更高的访问性能。
+ *
  * (有点小疑问：netty中封装的特别多，对内存的占用也不小吧，好多的中间对象)
  *
  * A special variant of {@link ThreadLocal} that yields higher access performance when accessed from a
@@ -48,6 +50,9 @@ public class FastThreadLocal<V> {
     private static final int variablesToRemoveIndex = InternalThreadLocalMap.nextVariableIndex();
 
     /**
+     * 移除所有绑定到当前线程的{@link FastThreadLocal}变量。
+     * 当您处于容器环境中时，并且您不希望将线程局部变量保留在您不管理的线程中时，此操作非常有用。
+     *
      * Removes all {@link FastThreadLocal} variables bound to the current thread.  This operation is useful when you
      * are in a container environment, and you don't want to leave the thread local variables in the threads you do not
      * manage.

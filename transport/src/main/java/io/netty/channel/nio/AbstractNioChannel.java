@@ -58,8 +58,16 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      * JDK的channel，实际上是代理。 Netty中有许多代理实现
      */
     private final SelectableChannel ch;
+    /**
+     * 读感兴趣的操作集合
+     */
     protected final int readInterestOp;
+    /**
+     * 注册成功的key，每一次注册都会生成新的SelectionKey
+     * 这里使用volatile的原因待分析
+     */
     volatile SelectionKey selectionKey;
+
     boolean readPending;
     private final Runnable clearReadPendingRunnable = new Runnable() {
         @Override
@@ -394,6 +402,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         boolean selected = false;
         for (;;) {
             try {
+                // 死循环的方式注册channel到selector
                 selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
                 return;
             } catch (CancelledKeyException e) {

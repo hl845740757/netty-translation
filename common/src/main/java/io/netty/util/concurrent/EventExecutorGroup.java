@@ -35,10 +35,12 @@ import java.util.concurrent.TimeUnit;
  * Netty是异步的，是基于事件的，它需要不停的处理各种各样的事件，因此定义EventExecutor。
  * 而Netty处理监听各种各样的事件又是基于循环的，因此又演化到 EventLoop.
  *
- *
  * PS:
  * EventExecutorGroup 与 EventExecutor 之间的关系就是容器与容器内的元素这样的关系。
  * 可以看做是设计模式中的组合模式的，EventExecutorGroup 既是顶层的 Component，也是容器节点，而EventExecutor是叶子节点。
+ *
+ * 在Netty的设计中：带Group/Multi的是多线程，而不带的基本都是单线程。
+ * {@link EventExecutorGroup}就是多线程的顶层接口，{@link EventExecutor}就是单线程的顶层接口。
  *
  * The {@link EventExecutorGroup} is responsible for providing the {@link EventExecutor}'s to use
  * via its {@link #next()} method. Besides this, it is also responsible for handling their

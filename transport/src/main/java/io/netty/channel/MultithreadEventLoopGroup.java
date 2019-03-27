@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * 用多线程同时处理任务的{@link EventLoopGroup}的基本抽象实现。
+ * 它负责将任务和Channel注册请求分配给它的子节点{@link SingleThreadEventLoop}。
  *
  * Abstract base class for {@link EventLoopGroup} implementations that handles their tasks with multiple threads at
  * the same time.

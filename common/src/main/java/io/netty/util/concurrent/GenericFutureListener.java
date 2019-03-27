@@ -18,12 +18,14 @@ package io.netty.util.concurrent;
 import java.util.EventListener;
 
 /**
+ *
+ * 通用Future监听器。
+ *
  * 监听{@link Future}的计算结果。
  * 一旦listener通过{@link Future#addListener(GenericFutureListener)}添加到ChannelFuture上，
  * 那么异步操作的结果将会被通知。
  *
  * 这里是 观察者模式(发布/订阅模式) 的一种运用。
- *
  * 一般来说，异步操作的回调都是另一个线程执行，需要处理线程安全问题。
  *
  * Listens to the result of a {@link Future}.  The result of the asynchronous operation is notified once this listener

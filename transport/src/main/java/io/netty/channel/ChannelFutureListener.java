@@ -20,6 +20,16 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 
 /**
+ * 监听{@link ChannelFuture}的结果。
+ * 一旦该listener通过{@link ChannelFuture#addListener(GenericFutureListener)}添加到Future上之后，
+ * {@link Channel}的异步IO操作结果将会被通知。
+ *
+ * <h3>快速的返回控制权给调用者</h3>
+ * {@link #operationComplete(Future)}会直接地被IO线程调用。因此，在一个Handler的方法中
+ * 执行一个耗时的任务或者阻塞的操作将会在IO操作期间造成一次不期望的暂停。如果你需要在IO操作完成时
+ * 执行一个阻塞的操作，请尝试使用线程池中的其它线程执行该操作。
+ * <p></p>
+ *
  * Listens to the result of a {@link ChannelFuture}.  The result of the
  * asynchronous {@link Channel} I/O operation is notified once this listener
  * is added by calling {@link ChannelFuture#addListener(GenericFutureListener)}.

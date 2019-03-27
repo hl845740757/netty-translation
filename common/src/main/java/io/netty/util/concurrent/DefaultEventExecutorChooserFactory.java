@@ -20,7 +20,8 @@ import io.netty.util.internal.UnstableApi;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 使用简单轮询方式分配EventExecutor的默认Chooser工厂实现
+ * 默认的EventExecutorChooser工厂。
+ * 它创建的Chooser使用简单轮询方式分配下一个{@link EventExecutor}。
  *
  * Default implementation which uses simple round-robin to choose next {@link EventExecutor}.
  */

@@ -16,12 +16,13 @@
 package io.netty.util.concurrent;
 
 /**
- * 事件执行器，它是一种特殊的Executor,其作用就是主处理事件。
  *
- * {@link EventExecutor}是一个特殊的{@link EventExecutorGroup}。
- * 它附带了一些简单方法去查看一个线程是否在一个EventLoop中。
+ * 事件执行器，它是一种特殊的{@link EventExecutorGroup},其作用就是主处理事件。
+ * 它附带了一些简单方法去查看一个线程是否运行在EventLoop中。
+ * 此外，它继承了{@link EventExecutorGroup}并且提供了访问{@link EventExecutorGroup}的通用方法。
  *
- * 此外，它继承了{@link EventExecutorGroup}并且提供了{@link EventExecutorGroup}的通用方法。
+ * 在Netty的设计中：带Group/Multi的是多线程，而不带的基本都是单线程。
+ * {@link EventExecutorGroup}就是多线程的顶层接口，{@link EventExecutor}就是单线程的顶层接口。
  *
  * handy：简单
  *
@@ -48,13 +49,16 @@ public interface EventExecutor extends EventExecutorGroup {
     EventExecutorGroup parent();
 
     /**
-     * 一个便捷方法，查询当前先去是否是当前 {@link EventExecutor}中的线程
+     * 一个便捷方法，查询当前线程是否是当前{@link EventExecutor}中的线程。
+     * 其实就是查询当前线程是否就是EventExecutor线程(EventExecutor概念上就是单线程的)。
+     *
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */
     boolean inEventLoop();
 
     /**
-     * 查询给定的线程是否EventExecutor中的线程
+     * 查询给定的线程是否是EventExecutor中的线程。
+     * (给定的线程是否运行在事件循环中。)
      *
      * Return {@code true} if the given {@link Thread} is executed in the event loop,
      * {@code false} otherwise.

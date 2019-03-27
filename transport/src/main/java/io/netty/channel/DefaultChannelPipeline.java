@@ -40,16 +40,34 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
+ * {@link ChannelPipeline}的默认实现。
+ * 它一般在{@link Channel}的实现创建的时候{@link Channel}创建。
+ *
+ * 它通过双向链表组织 {@link ChannelHandlerContext}，并有固定的头尾节点。
+ * 头尾节点用于完成特定的工作。
+ *
+ * 入站事件流动方向： head-->tail tail进行资源释放和丢弃无用信息
+ * 出站事件流动方向： tail-->head head进行真正的写数据操作，并释放资源
+ *
  * The default {@link ChannelPipeline} implementation.  It is usually created
  * by a {@link Channel} implementation when the {@link Channel} is created.
  */
 public class DefaultChannelPipeline implements ChannelPipeline {
 
     static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultChannelPipeline.class);
-
+    /**
+     * headContext的名字是静态初始化的，所有pipeline使用相同的名字
+     */
     private static final String HEAD_NAME = generateName0(HeadContext.class);
+    /**
+     * tailContext的名字也是静态初始化的，所有pipeline使用相同的名字
+     */
     private static final String TAIL_NAME = generateName0(TailContext.class);
 
+    /**
+     * 对jdk TreadLocal 和 ThreadLocalMap 的改进
+     * (理解成jdk的ThreadLocal就好)
+     */
     private static final FastThreadLocal<Map<Class<?>, String>> nameCaches =
             new FastThreadLocal<Map<Class<?>, String>>() {
         @Override
@@ -74,6 +92,14 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private boolean firstRegistration = true;
 
     /**
+     * 这是由{@link #callHandlerAddedForAllHandlers()}处理的链表的头部，
+     * 以此处理所有的{@link #callHandlerAdded0(AbstractChannelHandlerContext)}填充操作。
+     *
+     * 我们只保留head(首节点)，因为列表预计不经常使用并且它的长度很小。
+     * 因此假设进行完全迭代进行插入是节约内存和尾部管理复杂度的好的折中。
+     * (其可见性由 this 保护)
+     * <p></p>
+     *
      * This is the head of a linked list that is processed by {@link #callHandlerAddedForAllHandlers()} and so process
      * all the pending {@link #callHandlerAdded0(AbstractChannelHandlerContext)}.
      *
@@ -84,6 +110,11 @@ public class DefaultChannelPipeline implements ChannelPipeline {
     private PendingHandlerCallback pendingHandlerCallbackHead;
 
     /**
+     * 一旦pipeline关联的 {@link AbstractChannel}注册到它关联的{@link EventLoop}则设置为true.
+     * 一旦设置为true，则不再改变。
+     * (其可见性由 this 保护)
+     * (???存疑，记得channel可以手动取消绑定，再绑定到别的EventLoop)
+     *
      * Set to {@code true} once the {@link AbstractChannel} is registered.Once set to {@code true} the value will never
      * change.
      */
@@ -166,6 +197,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // 添加到链表头
             addFirst0(newCtx);
 
+            // 如果registered为false，意味着channel还未注册到eventLoop。在这种情况下，
+            // 我们将context添加到了pipeline，并且添加一个任务，一旦channel注册之后，它就会调用
+            // ChannelHandler.handlerAdded(...)方法
+
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
@@ -175,13 +210,14 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
 
+            // 在这里表示已注册，但是当前线程不是对应的eventLoop线程，提交到对应的线程以保证线程安全性。
             EventExecutor executor = newCtx.executor();
             if (!executor.inEventLoop()) {
                 callHandlerAddedInEventLoop(newCtx, executor);
                 return this;
             }
         }
-        // 调用handler添加到pipeline的事件
+        // 已经注册，并且当前线程就是channel的EventLoop线程，触发handler添加到pipeline的事件
         callHandlerAdded0(newCtx);
         return this;
     }
@@ -226,6 +262,10 @@ public class DefaultChannelPipeline implements ChannelPipeline {
             // 添加到链表尾部
             addLast0(newCtx);
 
+            // 如果registered为false，意味着channel还未注册到eventLoop。在这种情况下，
+            // 我们将context添加到了pipeline，并且添加一个任务，一旦channel注册之后，它就会调用
+            // ChannelHandler.handlerAdded(...)方法
+
             // If the registered is false it means that the channel was not registered on an eventLoop yet.
             // In this case we add the context to the pipeline and add a task that will call
             // ChannelHandler.handlerAdded(...) once the channel is registered.
@@ -235,13 +275,14 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                 return this;
             }
 
+            // 在这里表示已注册，但是当前线程不是对应的eventLoop线程，提交到对应的线程以保证线程安全性。
             EventExecutor executor = newCtx.executor();
             if (!executor.inEventLoop()) {
                 callHandlerAddedInEventLoop(newCtx, executor);
                 return this;
             }
         }
-        // 触发handler添加到pipeline的事件
+        // 已经注册，并且当前线程就是channel的EventLoop线程，触发handler添加到pipeline的事件
         callHandlerAdded0(newCtx);
         return this;
     }

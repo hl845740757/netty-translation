@@ -18,6 +18,8 @@ package io.netty.util.concurrent;
 import java.util.concurrent.Executor;
 
 /**
+ * 立即执行的Executor。它的实现方式就是调用者执行，直接调用 Runnable的run()方法。
+ *
  * {@link Executor} which execute tasks in the callers thread.
  */
 public final class ImmediateExecutor implements Executor {

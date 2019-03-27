@@ -29,6 +29,7 @@ import static io.netty.util.concurrent.AbstractEventExecutor.*;
 /**
  * 一个{@link EventExecutorGroup}的抽象实现，实现一些基础的方法。
  * 它是容器类型节点的顶层超类。
+ *
  * 因为它是一个容器节点，自身并不真正的处理逻辑，而是简单的将任务分配到每一个EventExecutor。
  * 其主要作用是管理EventExecutor节点的生命周期等等。
  *

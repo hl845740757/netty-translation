@@ -25,6 +25,17 @@ import java.net.ServerSocket;
 import java.net.StandardSocketOptions;
 
 /**
+ * <p>
+ * ServerSocketChannel的配置信息。
+ *
+ * <h3>可用的参数</h3>
+ *
+ * 除了{@link ChannelConfig}中提供的属性以外，{@link ServerSocketChannelConfig}
+ * 允许在option map中添加下面的option。
+ * (即：backlog,reuseAddress,receiveBufferSize三个属性)。
+ * <p>
+ * </p>
+ *
  * A {@link ChannelConfig} for a {@link ServerSocketChannel}.
  *
  * <h3>Available options</h3>

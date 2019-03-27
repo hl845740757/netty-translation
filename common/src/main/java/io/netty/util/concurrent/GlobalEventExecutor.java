@@ -30,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 一个单线程的{@link EventExecutor}。它会自动的启动和停止它的线程当1秒之内没有任务填充到它的任务队列时。
+ * 请注意：该Executor不可扩展用于调度大量的任务，请使用专用的线程。
+ *
  * Single-thread singleton {@link EventExecutor}.  It starts the thread automatically and stops it when there is no
  * task pending in the task queue for 1 second.  Please note it is not scalable to schedule large number of tasks to
  * this executor; use a dedicated executor.

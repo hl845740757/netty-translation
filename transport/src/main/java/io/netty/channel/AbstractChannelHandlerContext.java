@@ -1009,6 +1009,18 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
         return handlerState == REMOVE_COMPLETE;
     }
 
+    /**
+     * 划重点，这里已经不再维护context自己的attributeMap了，而是使用channel的attributeMap.
+     * Netty 4.1中的大变化。
+     * (之前版本 ChannelHandlerContext和Channel拥有自己的attributeMap/独立存储空间，这容易让用户感到困惑。
+     * 因为channel.attr中的属性是无法通过 ctx.attr访问的，且这样会造成内存浪费。而每个handler只需要持有自己私有的key,
+     * 就可以保证key的不重复)
+     *
+     * <a href="https://netty.io/wiki/new-and-noteworthy-in-4.1.html">Netty 4.1 变化</a>
+     * @param key
+     * @param <T>
+     * @return
+     */
     @Override
     public <T> Attribute<T> attr(AttributeKey<T> key) {
         return channel().attr(key);
@@ -1045,6 +1057,10 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
         return StringUtil.simpleClassName(ChannelHandlerContext.class) + '(' + name + ", " + channel() + ')';
     }
 
+    /**
+     * 写和清空任务。
+     * 当提交写请求的线程不是Channel绑定的EventLoop线程时，将用户的写请求封装为任务，提交到EventLoop线程。
+     */
     abstract static class AbstractWriteTask implements Runnable {
 
         private static final boolean ESTIMATE_TASK_SIZE_ON_SUBMIT =
@@ -1116,6 +1132,9 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
         }
     }
 
+    /**
+     * 只写任务，只是将数据写入缓冲区，而不清空缓冲区。
+     */
     static final class WriteTask extends AbstractWriteTask implements SingleThreadEventLoop.NonWakeupRunnable {
 
         private static final Recycler<WriteTask> RECYCLER = new Recycler<WriteTask>() {
@@ -1125,6 +1144,13 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
             }
         };
 
+        /**
+         * 提供工厂方法，复用对象，而不会大量的创建对象
+         * @param ctx
+         * @param msg
+         * @param promise
+         * @return
+         */
         static WriteTask newInstance(
                 AbstractChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
             WriteTask task = RECYCLER.get();
@@ -1146,6 +1172,13 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
             }
         };
 
+        /**
+         * 提供工厂方法，复用对象，而不会大量的创建对象
+         * @param ctx
+         * @param msg
+         * @param promise
+         * @return
+         */
         static WriteAndFlushTask newInstance(
                 AbstractChannelHandlerContext ctx, Object msg,  ChannelPromise promise) {
             WriteAndFlushTask task = RECYCLER.get();

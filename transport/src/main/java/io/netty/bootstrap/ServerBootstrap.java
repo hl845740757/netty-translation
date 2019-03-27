@@ -187,14 +187,21 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
         }
 
         // !!!划重点
-        // 当channel绑定到EventLoop线程上时，通过ChannelInitializer将配置信息真正的赋值到pipeline.
-        // 现在添加了一个待激活的ChannelInitializer，在注册成功时才会生效
+        // 添加ChannelInitializer到pipeline，由于线程channel还未绑定到它的EventLoop线程，
+        // 并不会触发initChannel (handlerAdded)方法，当channel绑定到EventLoop线程上时，
+        // ChannelInitializer将真正的初始化pipeline.
 
         p.addLast(new ChannelInitializer<Channel>() {
+
+            /**
+             * 触发时机：channel绑定到EventLoop线程上时。
+             *
+             * @param ch            the {@link Channel} which was registered.
+             *                      这里就是ServerSocketChannel
+             * @throws Exception
+             */
             @Override
             public void initChannel(final Channel ch) throws Exception {
-                // 这里的ch 其实还是外部的 channel (parentGroup，ServerSocketChannel)
-
                 final ChannelPipeline pipeline = ch.pipeline();
                 ChannelHandler handler = config.handler();
                 if (handler != null) {
@@ -277,8 +284,8 @@ public class ServerBootstrap extends AbstractBootstrap<ServerBootstrap, ServerCh
          * 将新建立的连接转移到到childGroup。
          * MainReactor只负责accept() 和 create()操作。
          * 将channel的IO事件转发给其它的reactor，可实现负载均衡。
-         * @param ctx
-         * @param msg
+         * @param ctx serverSocketChannel的pipeline中
+         * @param msg 接收到的连接/新的channel
          */
         @Override
         @SuppressWarnings("unchecked")
