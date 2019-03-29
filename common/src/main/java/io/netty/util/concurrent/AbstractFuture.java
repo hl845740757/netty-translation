@@ -30,6 +30,12 @@ import java.util.concurrent.TimeoutException;
  */
 public abstract class AbstractFuture<V> implements Future<V> {
 
+    /**
+     * get的本质就是一直等待直到操作完成，然后查询结果
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     */
     @Override
     public V get() throws InterruptedException, ExecutionException {
         await();

@@ -17,6 +17,9 @@
 package io.netty.util.concurrent;
 
 /**
+ * {@link ProgressiveFuture}是一个用于指示操作进度的{@link Future}
+ * (但是该接口也没看见有关进度的方法呢？也就是说是个标记接口)
+ *
  * A {@link Future} which is used to indicate the progress of an operation.
  */
 public interface ProgressiveFuture<V> extends Future<V> {

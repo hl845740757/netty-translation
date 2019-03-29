@@ -22,6 +22,7 @@ import io.netty.util.concurrent.OrderedEventExecutor;
  *
  * 一个{@link EventLoop}在其生命周期中，只会绑定在同一个线程上。
  *
+ * 它继承EventLoopGroup的必要性是因为它可以代表EventLoopGroup绑定到Bootstrap。
  *
  * Will handle all the I/O operations for a {@link Channel} once registered.
  *
