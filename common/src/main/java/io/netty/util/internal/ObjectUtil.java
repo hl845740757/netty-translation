@@ -36,6 +36,8 @@ public final class ObjectUtil {
     }
 
     /**
+     * 检查给定的参数是否是一个严格的整数。
+     *
      * Checks that the given argument is strictly positive. If it is not, throws {@link IllegalArgumentException}.
      * Otherwise, returns the argument.
      */

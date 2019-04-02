@@ -28,6 +28,9 @@ import io.netty.channel.ChannelPipeline;
 import java.util.List;
 
 /**
+ * 将JSON对象和数组的字节流拆分为单个对象/数组，并将它们传递到{@link ChannelPipeline}。
+ * <P>
+ *
  * Splits a byte stream of JSON objects and arrays into individual objects/arrays and passes them up the
  * {@link ChannelPipeline}.
  * <p>

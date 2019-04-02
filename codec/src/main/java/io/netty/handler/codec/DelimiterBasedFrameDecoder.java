@@ -23,14 +23,31 @@ import io.netty.channel.ChannelHandlerContext;
 import java.util.List;
 
 /**
+ * {@link DelimiterBasedFrameDecoder}是用一个或多个分隔符拆分接收到的{@link ByteBuf}的解码器。
+ * 在解码以分隔符结尾的消息时特别的有用。
+ * 如： {@link Delimiters#nulDelimiter() NUL}或{@linkplain Delimiters#lineDelimiter() newline characters}
+ * <p>
+ *
  * A decoder that splits the received {@link ByteBuf}s by one or more
  * delimiters.  It is particularly useful for decoding the frames which ends
  * with a delimiter such as {@link Delimiters#nulDelimiter() NUL} or
  * {@linkplain Delimiters#lineDelimiter() newline characters}.
  *
+ * <h3>预定义的分隔物</h3>
+ * <p>
+ * {@link Delimiters} 定义了常用的分隔符以方便使用。
+ *
  * <h3>Predefined delimiters</h3>
  * <p>
  * {@link Delimiters} defines frequently used delimiters for convenience' sake.
+ *
+ * <h3>指定多个分隔符</h3>
+ * <p>
+ * {@link DelimiterBasedFrameDecoder} 允许你指定超过一个分隔符。如果在buffer中发现多个分隔符，
+ * 它会选择能产生最短帧的分隔符。例如：如果buffer中有如下的数据：
+ *
+ * 一个{@link DelimiterBasedFrameDecoder}({@link Delimiters#lineDelimiter() Delimiters.lineDelimiter()})
+ * 会选择{@code '\n'}作为第一个分隔符产生两帧数据，而不是错误的选择{@code '\r\n'}作为第一个分隔符。
  *
  * <h3>Specifying more than one delimiter</h3>
  * <p>

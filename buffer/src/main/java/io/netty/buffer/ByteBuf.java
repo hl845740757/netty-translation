@@ -227,6 +227,9 @@ import java.nio.charset.UnsupportedCharsetException;
  *      0 = readerIndex = writerIndex            <=            capacity
  * </pre>
  *
+ * <h3>get和set方法(绝对方法)</h3>
+ * 以get和set开头的方法，index都是绝对索引值，其读写操作不会修改当前的readerIndex和writerIndex.
+ *
  * <h3>搜索操作</h3>
  * 对于简单的单字节的搜索，使用{@link #indexOf(int, int, byte)} 和 {@link #bytesBefore(int, int, byte)}。
  * {@link #bytesBefore(byte)} 在处理以{@code nul}结尾的字符串时特别有用。
@@ -459,6 +462,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract ByteBuf writerIndex(int writerIndex);
 
     /**
+     * 一次性的设置该buffer的{@code readerIndex} 和 {@code writerIndex}。
+     * (可以更方便安全的更新同时读写索引)
+     *
      * Sets the {@code readerIndex} and {@code writerIndex} of this buffer
      * in one shot.  This method is useful when you have to worry about the
      * invocation order of {@link #readerIndex(int)} and {@link #writerIndex(int)}
@@ -512,6 +518,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract ByteBuf setIndex(int readerIndex, int writerIndex);
 
     /**
+     * 返回剩余可读的字节数。它等于{@code (this.writerIndex - this.readerIndex)}。
+     * <p></p>
+     *
      * Returns the number of readable bytes which is equal to
      * {@code (this.writerIndex - this.readerIndex)}.
      */
@@ -530,6 +539,10 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract int maxWritableBytes();
 
     /**
+     * 是否有可读字节。
+     * 当前仅当{@code (this.writerIndex - this.readerIndex)}大于0时返回true。
+     * <p>
+     *
      * Returns {@code true}
      * if and only if {@code (this.writerIndex - this.readerIndex)} is greater
      * than {@code 0}.
@@ -537,11 +550,19 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract boolean isReadable();
 
     /**
+     * 是否有足够数量的可读字节。
+     * 当前仅当该buffer的content区域包含大于等于指定数量的元素时返回true。
+     * <p>
+     *
      * Returns {@code true} if and only if this buffer contains equal to or more than the specified number of elements.
      */
     public abstract boolean isReadable(int size);
 
     /**
+     * 是否可以写入一个字节。
+     * 当前仅当{@code (this.capacity - this.writerIndex)}大于0是返回true。
+     * <p>
+     *
      * Returns {@code true}
      * if and only if {@code (this.capacity - this.writerIndex)} is greater
      * than {@code 0}.
@@ -549,12 +570,19 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract boolean isWritable();
 
     /**
+     * 是否有足够的写空闲。
+     * 当前仅当该buffer有足够的空间允许写入指定数量的元素是返回true。
+     * <p></p>
+     *
      * Returns {@code true} if and only if this buffer has enough room to allow writing the specified number of
      * elements.
      */
     public abstract boolean isWritable(int size);
 
     /**
+     * 清空索引。将{@code readerIndex}和 {@code writerIndex}设置为0。
+     * 它并不会真正的清空数据。
+     *
      * Sets the {@code readerIndex} and {@code writerIndex} of this buffer to
      * {@code 0}.
      * This method is identical to {@link #setIndex(int, int) setIndex(0, 0)}.
@@ -604,7 +632,10 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract ByteBuf resetWriterIndex();
 
     /**
-     * 类似于JDK Buffer的 compact，压缩
+     * 丢弃已读字节，类似于JDK Buffer的 compact(压缩)。
+     * 丢弃[0,readerIndex)之间的字节，它会可读字节 [readerIndex,writerIndex)
+     * 移动到0索引开始的位置。并且分别的设置读索引为0，写索引为{@code oldWriterIndex - oldReaderIndex}。
+     *
      * Discards the bytes between the 0th index and {@code readerIndex}.
      * It moves the bytes between {@code readerIndex} and {@code writerIndex}
      * to the 0th index, and sets {@code readerIndex} and {@code writerIndex}
@@ -657,6 +688,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      */
     public abstract int ensureWritable(int minWritableBytes, boolean force);
 
+    // region Get方法区，所有的Get方法都不会修改 readerIndex 和 writerIndex。
     /**
      * Gets a boolean at the specified absolute (@code index) in this buffer.
      * This method does not modify the {@code readerIndex} or {@code writerIndex}
@@ -847,6 +879,8 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract long  getLongLE(int index);
 
     /**
+     * 在该buffer指定的绝对索引位置处获取一个2个字节构成的 UTF-16字符。
+     *
      * Gets a 2-byte UTF-16 character at the specified absolute
      * {@code index} in this buffer.  This method does not modify
      * {@code readerIndex} or {@code writerIndex} of this buffer.
@@ -1076,7 +1110,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      *         if {@code length} is greater than {@code this.readableBytes}
      */
     public abstract CharSequence getCharSequence(int index, int length, Charset charset);
+    // endregion
 
+    // region Set方法区，所有set方法都不会修改 readerIndex和writerIndex
     /**
      * Sets the specified boolean at the specified absolute {@code index} in this
      * buffer.
@@ -1452,6 +1488,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      */
     public abstract int setCharSequence(int index, CharSequence sequence, Charset charset);
 
+    // endregion
+
+    // region Read方法区，所有的read方法会使readerIndex增加一定的偏移量，且不能超过writeIndex
     /**
      * Gets a boolean at the current {@code readerIndex} and increases
      * the {@code readerIndex} by {@code 1} in this buffer.
@@ -1863,7 +1902,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      *         if {@code length} is greater than {@code this.readableBytes}
      */
     public abstract ByteBuf skipBytes(int length);
+    // endregion ，
 
+    // region Write方法区，所有的write方法会是writeIndex增加一定的偏移量，且不能超过capacity
     /**
      * Sets the specified boolean at the current {@code writerIndex}
      * and increases the {@code writerIndex} by {@code 1} in this buffer.
@@ -2159,7 +2200,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      * @return the written number of bytes
      */
     public abstract int writeCharSequence(CharSequence sequence, Charset charset);
+    // endregion
 
+    // region 搜索方法区，在指定区间内查找特定的简单字节或复杂字节
     /**
      * Locates the first occurrence of the specified {@code value} in this
      * buffer.  The search takes place from the specified {@code fromIndex}
@@ -2255,6 +2298,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
      *         The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
      */
     public abstract int forEachByteDesc(int index, int length, ByteProcessor processor);
+    // endregion
 
     /**
      * Returns a copy of this buffer's readable bytes.  Modifying the content
@@ -2445,6 +2489,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract ByteBuffer[] nioBuffers(int index, int length);
 
     /**
+     * 当且仅当该buffer是由字节数组支撑的时返回true (也就是是heapBuffer返回true)。
+     * 如果该方法返回true，你可以安全的调用{@link #array()}和{@link #arrayOffset()}。
+     * <p></p>
      * Returns {@code true} if and only if this buffer has a backing byte array.
      * If this method returns true, you can safely call {@link #array()} and
      * {@link #arrayOffset()}.
@@ -2452,37 +2499,52 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract boolean hasArray();
 
     /**
+     * 返回支撑该byteBuf的字节数组。
+     *
      * Returns the backing byte array of this buffer.
      *
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
+     *         如果不存在可访问的支撑字节数组。
      */
     public abstract byte[] array();
 
     /**
+     * 返回支撑该byteBuf的字节数组的首字节相对于数组地址的偏移量。
+     *
      * Returns the offset of the first byte within the backing byte array of
      * this buffer.
      *
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
+     *         如果不存在可访问的支撑字节数组
      */
     public abstract int arrayOffset();
 
     /**
+     * 当且仅当此缓冲区有一个引用指向 底层数据(支撑数据) 的低级别内存地址时，才返回{@code true}。
+     *
      * Returns {@code true} if and only if this buffer has a reference to the low-level memory address that points
      * to the backing data.
      */
     public abstract boolean hasMemoryAddress();
 
     /**
+     * 返回低级别的内存地址，该地址指向底层数据的第一个字节。
+     *
      * Returns the low-level memory address that point to the first byte of ths backing data.
      *
      * @throws UnsupportedOperationException
      *         if this buffer does not support accessing the low-level memory address
+     *         如果给buffer不支持访问低级别的内存地址。
      */
     public abstract long memoryAddress();
 
     /**
+     * 以指定的字符集解码该buffer的剩余可读字节到一个字符串。该方法等价于调用
+     * {@code buf.toString(buf.readerIndex(), buf.readableBytes(), charsetName)}。
+     * 该方法不会修改buffer的{@code readerIndex}和{@code writerIndex}
+     *
      * Decodes this buffer's readable bytes into a string with the specified
      * character set name.  This method is identical to
      * {@code buf.toString(buf.readerIndex(), buf.readableBytes(), charsetName)}.
@@ -2496,6 +2558,9 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract String toString(Charset charset);
 
     /**
+     * 以指定的字符集解码该buffer的子区域到一个字符串。
+     * 该方法不会修改buffer的{@code readerIndex}和{@code writerIndex}
+     *
      * Decodes this buffer's sub-region into a string with the specified
      * character set.  This method does not modify {@code readerIndex} or
      * {@code writerIndex} of this buffer.
@@ -2557,6 +2622,7 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     public abstract ByteBuf touch(Object hint);
 
     /**
+     * 是否可访问(引用计数大于0)
      * Used internally by {@link AbstractByteBuf#ensureAccessible()} to try to guard
      * against using the buffer after it was released (best-effort).
      */

@@ -909,7 +909,9 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     size = 0;
                 }
             } catch (Throwable t) {
+                // 发送消息出现异常(过滤时产生异常)
                 safeSetFailure(promise, t);
+                // 发送错误，释放消息
                 ReferenceCountUtil.release(msg);
                 return;
             }

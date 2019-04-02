@@ -338,6 +338,10 @@ public final class Unpooled {
     }
 
     /**
+     * 创建一个大端的复合缓冲区。新创建的buffer没有任何组件。
+     * 且其组件限制数为{@code AbstractByteBufAllocator.DEFAULT_MAX_COMPONENTS}。
+     * <p></p>
+     *
      * Returns a new big-endian composite buffer with no components.
      */
     public static CompositeByteBuf compositeBuffer() {
@@ -345,6 +349,10 @@ public final class Unpooled {
     }
 
     /**
+     * 创建一个大端的复合缓冲区。新创建的buffer没有任何组件。
+     * 最大组件数有参数指定。
+     * <p></p>
+     *
      * Returns a new big-endian composite buffer with no components.
      */
     public static CompositeByteBuf compositeBuffer(int maxNumComponents) {
@@ -569,6 +577,12 @@ public final class Unpooled {
     }
 
     /**
+     * 创建一个大端的buffer，它的内容是以指定{@code charset(字符集)}编码后字符串。
+     * 新创建的byteBuffer的 {@code readerIndex}为0，{@code writerIndex}是被编码的字符串的长度。
+     * (大端序：从左到右，先看见的先存储--先存储的在低内存地址)
+     * 它的capacity和每个字符编码时占用的最大字节数有关。
+     * <p>
+     *
      * Creates a new big-endian buffer whose content is the specified
      * {@code string} encoded in the specified {@code charset}.
      * The new buffer's {@code readerIndex} and {@code writerIndex} are
@@ -587,6 +601,10 @@ public final class Unpooled {
     }
 
     /**
+     * 创建一个大端的buffer，它的内容是以指定{@code charset(字符集)}编码后字符串的子区域。
+     * 新创建的byteBuffer的 {@code readerIndex}和{@code writerIndex}分别为0和被编码的字符串区域长度。
+     * (大端序：从左到右，先看见的先存储--先存储的在低内存地址)
+     *
      * Creates a new big-endian buffer whose content is a subregion of
      * the specified {@code string} encoded in the specified {@code charset}.
      * The new buffer's {@code readerIndex} and {@code writerIndex} are

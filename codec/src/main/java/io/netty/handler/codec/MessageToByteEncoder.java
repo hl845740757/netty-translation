@@ -27,6 +27,13 @@ import io.netty.util.internal.TypeParameterMatcher;
 
 
 /**
+ * {@link MessageToByteEncoder}以一种类似流的方式将一个消息编码为{@link ByteBuf}。
+ * 该类是比较简单但比较重要的一类。
+ * <p>
+ *     <li>该类之所以是泛型的是因为：编码时可以一个消息一个消息的编码，而不必批量的编码，是受控的</li>
+ *     <li>该类对应的解码器是{@link ByteToMessageDecoder}</li>
+ * </p>
+ *
  * {@link ChannelOutboundHandlerAdapter} which encodes message in a stream-like fashion from one message to an
  * {@link ByteBuf}.
  *
@@ -44,8 +51,11 @@ import io.netty.util.internal.TypeParameterMatcher;
  * </pre>
  */
 public abstract class MessageToByteEncoder<I> extends ChannelOutboundHandlerAdapter {
-
+    /**
+     * 类型匹配器。只有与泛型参数匹配的类型才会被编码器处理。
+     */
     private final TypeParameterMatcher matcher;
+
     private final boolean preferDirect;
 
     /**

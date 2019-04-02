@@ -24,6 +24,10 @@ import java.lang.reflect.TypeVariable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 泛型参数匹配器。
+ * {@link TypeParameterMatcher}是非常重要的一个类，它对Netty的写出优雅的、强大的模板类起了重要作用。
+ */
 public abstract class TypeParameterMatcher {
     /**
      * 无操作的类型参数匹配器。
@@ -106,7 +110,7 @@ public abstract class TypeParameterMatcher {
         final Class<?> thisClass = object.getClass();
         Class<?> currentClass = thisClass;
         for (;;) {
-            // 找到了目标类
+            // 找到了目标类(因为需要GenericSuperClass才能获取泛型的信息，因此需要递归寻找)
             if (currentClass.getSuperclass() == parametrizedSuperclass) {
                 // 泛型参数在类中的索引
                 int typeParamIndex = -1;
@@ -190,13 +194,27 @@ public abstract class TypeParameterMatcher {
         }
     }
 
+    /**
+     * 进行失败处理，抛出异常
+     * @param type
+     * @param typeParamName
+     * @return
+     */
     private static Class<?> fail(Class<?> type, String typeParamName) {
         throw new IllegalStateException(
                 "cannot determine the type of the type parameter '" + typeParamName + "': " + type);
     }
 
+    /**
+     * 查询给定的对象是否匹配
+     * @param msg
+     * @return
+     */
     public abstract boolean match(Object msg);
 
+    /**
+     * 基于反射的类型匹配器
+     */
     private static final class ReflectiveMatcher extends TypeParameterMatcher {
         private final Class<?> type;
 
@@ -206,6 +224,7 @@ public abstract class TypeParameterMatcher {
 
         @Override
         public boolean match(Object msg) {
+            // 等价于 msg instanceOf Type
             return type.isInstance(msg);
         }
     }

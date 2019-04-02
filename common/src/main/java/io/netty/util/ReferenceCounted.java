@@ -19,6 +19,15 @@ package io.netty.util;
  * 一个引用计数的对象需要显示的释放/回收。
  *
  * A reference-counted object that requires explicit deallocation.
+ *
+ * <p>
+ * 当一个新的{@link ReferenceCounted}对象被实例化时。它的引用计数起始值为1。
+ * {@link #retain()}方法用于增加引用计数，{@link #release()}用于减少引用计数。
+ * 如果引用计数减少到0，对象将会被显式的回收。并且访问被回收的对象通常会导致访问冲突(违反)。
+ * </p>
+ * 如果一个实现了{@link ReferenceCounted}的对象是其它实现了{@link ReferenceCounted}对象的容器。
+ * 当容器的引用计数变为0时容器内的对象也会通过{@link #release()}被释放。
+ *
  * <p>
  * When a new {@link ReferenceCounted} is instantiated, it starts with the reference count of {@code 1}.
  * {@link #retain()} increases the reference count, and {@link #release()} decreases the reference count.
@@ -48,7 +57,7 @@ public interface ReferenceCounted {
     ReferenceCounted retain();
 
     /**
-     * 增加指定计数
+     * 引用计数增加指定数
      * Increases the reference count by the specified {@code increment}.
      */
     ReferenceCounted retain(int increment);

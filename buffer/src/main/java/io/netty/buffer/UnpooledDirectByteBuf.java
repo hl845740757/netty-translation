@@ -37,8 +37,12 @@ import java.nio.channels.ScatteringByteChannel;
 public class UnpooledDirectByteBuf extends AbstractReferenceCountedByteBuf {
 
     private final ByteBufAllocator alloc;
-
+    /**
+     * 包装JDK的ByteBuffer，以简化创建和回收操作。
+     * (当ByteBuffer被回收时，它对应的直接内存也会被回收)
+     */
     private ByteBuffer buffer;
+
     private ByteBuffer tmpNioBuf;
     private int capacity;
     private boolean doNotFree;

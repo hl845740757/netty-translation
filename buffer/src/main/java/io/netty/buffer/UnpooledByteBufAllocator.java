@@ -172,6 +172,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         protected void freeArray(byte[] array) {
             int length = array.length;
             super.freeArray(array);
+            // 更新堆上的数组的总字节数
             ((UnpooledByteBufAllocator) alloc()).decrementHeap(length);
         }
     }
@@ -202,6 +203,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         protected void freeDirect(ByteBuffer buffer) {
             int capacity = buffer.capacity();
             super.freeDirect(buffer);
+            // 更新直接内存上的字节数组的总长度
             ((UnpooledByteBufAllocator) alloc()).decrementDirect(capacity);
         }
     }
@@ -244,6 +246,7 @@ public final class UnpooledByteBufAllocator extends AbstractByteBufAllocator imp
         protected void freeDirect(ByteBuffer buffer) {
             int capacity = buffer.capacity();
             super.freeDirect(buffer);
+            // 更新直接内存上的数组的总字节数
             ((UnpooledByteBufAllocator) alloc()).decrementDirect(capacity);
         }
     }

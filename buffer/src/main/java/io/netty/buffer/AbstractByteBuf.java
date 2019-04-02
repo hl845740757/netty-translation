@@ -146,6 +146,7 @@ public abstract class AbstractByteBuf extends ByteBuf {
         return this;
     }
 
+
     @Override
     public ByteBuf clear() {
         readerIndex = writerIndex = 0;
@@ -214,16 +215,19 @@ public abstract class AbstractByteBuf extends ByteBuf {
     @Override
     public ByteBuf discardReadBytes() {
         ensureAccessible();
+        // 1.没有已读字节
         if (readerIndex == 0) {
             return this;
         }
-
+        // 2.这里表示有可读字节
         if (readerIndex != writerIndex) {
+            // 移动byteBuf的内容区域
             setBytes(0, this, readerIndex, writerIndex - readerIndex);
             writerIndex -= readerIndex;
             adjustMarkers(readerIndex);
             readerIndex = 0;
         } else {
+            // 3.这里表示已经读完了，只需要将索引重置为0
             adjustMarkers(readerIndex);
             writerIndex = readerIndex = 0;
         }
@@ -277,20 +281,24 @@ public abstract class AbstractByteBuf extends ByteBuf {
 
     final void ensureWritable0(int minWritableBytes) {
         ensureAccessible();
+        // 可写空间足够
         if (minWritableBytes <= writableBytes()) {
             return;
         }
+        // 是否启用了检查边界
         if (checkBounds) {
+            // 超过了最大容量限制，则抛出异常
             if (minWritableBytes > maxCapacity - writerIndex) {
                 throw new IndexOutOfBoundsException(String.format(
                         "writerIndex(%d) + minWritableBytes(%d) exceeds maxCapacity(%d): %s",
                         writerIndex, minWritableBytes, maxCapacity, this));
             }
         }
-
+        // 需要扩展容量，计算新的容量大小。 将当前容量转换为2的幂
         // Normalize the current capacity to the power of 2.
         int newCapacity = alloc().calculateNewCapacity(writerIndex + minWritableBytes, maxCapacity);
 
+        // 在这里调用子类的跳转容量方法
         // Adjust to the new capacity.
         capacity(newCapacity);
     }

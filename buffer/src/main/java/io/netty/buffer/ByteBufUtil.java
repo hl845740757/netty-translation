@@ -743,6 +743,7 @@ public final class ByteBufUtil {
     static ByteBuf encodeString0(ByteBufAllocator alloc, boolean enforceHeap, CharBuffer src, Charset charset,
                                  int extraCapacity) {
         final CharsetEncoder encoder = CharsetUtil.encoder(charset);
+        // capacity = 剩余的字符长度 * 每个字符最大占用的最大字节数 + 指定的额外空间大小
         int length = (int) ((double) src.remaining() * encoder.maxBytesPerChar()) + extraCapacity;
         boolean release = true;
         final ByteBuf dst;

@@ -24,13 +24,29 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import static io.netty.util.internal.ObjectUtil.checkPositive;
 
 /**
+ * 实现了引用计数的ByteBuf的抽象类。
+ *
  * Abstract base class for {@link ByteBuf} implementations that count references.
  */
 public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
+
     private static final long REFCNT_FIELD_OFFSET;
+    /**
+     * 为什么使用 AtomicIntegerFieldUpdater + int 而不是使用 AtomicInteger 呢？
+     * AtomicIntegerFieldUpdater是全局的，只需要一个实例。
+     * 而使用AtomicInteger则需要大量的AtomicInteger(每一个ByteBuf都需要一个)。
+     */
     private static final AtomicIntegerFieldUpdater<AbstractReferenceCountedByteBuf> refCntUpdater =
             AtomicIntegerFieldUpdater.newUpdater(AbstractReferenceCountedByteBuf.class, "refCnt");
 
+    /**
+     * 真正的引用计数是 refCnt>>>1。
+     *
+     * 没查看是哪个版本改成这样的，之前是1，直接进行加减操作。
+     * 当前版本复杂度高了很多。初步理解为为了解决溢出问题。
+     *
+     * volatile：{@link AtomicIntegerFieldUpdater}要求字段必须是volatile的。
+     */
     // even => "real" refcount is (refCnt >>> 1); odd => "real" refcount is 0
     @SuppressWarnings("unused")
     private volatile int refCnt = 2;
@@ -101,6 +117,22 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
         return retain0(checkPositive(increment, "increment"));
     }
 
+
+    /**
+     * 旧版本下很简单。
+     *         for (;;){
+     *             int refCnt=this.refCnt;
+     *             int nextCnt=refCnt+increment;
+     *             if (nextCnt < increment){
+     *                 throw new IllegalReferenceCountException(refCnt,increment);
+     *             }
+     *             if (refCntUpdater.compareAndSet(this,refCnt,nextCnt)){
+     *                 break;
+     *             }
+     *         }
+     * @param increment
+     * @return
+     */
     private ByteBuf retain0(final int increment) {
         // all changes to the raw count are 2x the "real" change
         int adjustedIncrement = increment << 1; // overflow OK here
@@ -140,6 +172,7 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
 
     private boolean release0(int decrement) {
         int rawCnt = nonVolatileRawCnt(), realCnt = toLiveRealCnt(rawCnt, decrement);
+        // 如果减少的值等于当前技术，则表示期望立即回收
         if (decrement == realCnt) {
             if (refCntUpdater.compareAndSet(this, rawCnt, 1)) {
                 deallocate();
@@ -191,6 +224,8 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
     }
 
     /**
+     * 当引用计数变为0时调用一次。进行回收操作
+     *
      * Called once {@link #refCnt()} is equals 0.
      */
     protected abstract void deallocate();

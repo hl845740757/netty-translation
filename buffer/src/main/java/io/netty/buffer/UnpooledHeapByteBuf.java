@@ -38,6 +38,9 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     private final ByteBufAllocator alloc;
+    /**
+     * heapByteBuf的数组可以自己创建，不需要保证NIO的ByteBuffer
+     */
     byte[] array;
     private ByteBuffer tmpNioBuf;
 
@@ -124,20 +127,26 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
         int oldCapacity = array.length;
         byte[] oldArray = array;
         if (newCapacity > oldCapacity) {
+            // 拷贝数组内容到新数组中，并更新数组引用
             byte[] newArray = allocateArray(newCapacity);
             System.arraycopy(oldArray, 0, newArray, 0, oldArray.length);
             setArray(newArray);
+            // 释放旧数组
             freeArray(oldArray);
         } else if (newCapacity < oldCapacity) {
+            // 容量缩小时需要考虑索引更新问题
             byte[] newArray = allocateArray(newCapacity);
             int readerIndex = readerIndex();
             if (readerIndex < newCapacity) {
+                // 读索引小于新容量，则可以继续读，需要判断写索引是否越界。
                 int writerIndex = writerIndex();
                 if (writerIndex > newCapacity) {
                     writerIndex(writerIndex = newCapacity);
                 }
                 System.arraycopy(oldArray, readerIndex, newArray, readerIndex, writerIndex - readerIndex);
             } else {
+                // readerIndex>=capacity => writerIndex>=capacity
+                // 读写索引都大于新容量时，直接设置为capacity
                 setIndex(newCapacity, newCapacity);
             }
             setArray(newArray);
@@ -551,7 +560,10 @@ public class UnpooledHeapByteBuf extends AbstractReferenceCountedByteBuf {
 
     @Override
     protected void deallocate() {
+        // 释放数组
         freeArray(array);
+        // 更改自己数组引用为空数组(旧版本为 array=null)
+        // 使得JVM能释放旧的数组
         array = EmptyArrays.EMPTY_BYTES;
     }
 

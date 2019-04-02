@@ -41,6 +41,14 @@ import java.util.NoSuchElementException;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
+ * {@link CompositeByteBuf}是一个虚拟的Buffer。它以一个合并后的Buffer视图表示多个buffer。
+ * 推荐使用{@link ByteBufAllocator#compositeBuffer()} 或 {@link Unpooled#wrappedBuffer(ByteBuf...)}
+ * 代替显示地调用构造方法。
+ * <p>
+ *     <li>个人觉得可能在池化中有很重要的作用，它可以将池中的零零碎碎的buffer合并之后使用，而不必创建那么多的Buffer</li>
+ *     <li>Netty在池化中是否这样使用了并不确定/li>
+ * </p>
+ *
  * A virtual buffer which shows multiple buffers as a single merged buffer.  It is recommended to use
  * {@link ByteBufAllocator#compositeBuffer()} or {@link Unpooled#wrappedBuffer(ByteBuf...)} instead of calling the
  * constructor explicitly.

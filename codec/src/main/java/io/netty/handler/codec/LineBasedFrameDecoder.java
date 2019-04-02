@@ -22,6 +22,15 @@ import io.netty.util.ByteProcessor;
 import java.util.List;
 
 /**
+ * {@link LineBasedFrameDecoder}是拆分以换行符结尾的消息的解码器。
+ * <li>{@code "\n"} 和 {@code "\r\n"}都会被处理。</li>
+ * <li>字节流应采用UTF-8字符或ASCII码编码。</li>
+ * <p>
+ * 当前的实现直接将{@code byte}强转为{@code char},然后将{@code char}与更小区间的ASCII字符比较，
+ * 如@code '\n'} 或 {@code '\r'}。
+ * UTF-8并没有使用小区间[0..0x7F]的字节值用于多字节的码点表示，因此完成支持该实现(UTF-8)。
+ *</p>
+ *
  * A decoder that splits the received {@link ByteBuf}s on line endings.
  * <p>
  * Both {@code "\n"} and {@code "\r\n"} are handled.

@@ -266,19 +266,20 @@ public abstract class AbstractNioByteChannel extends AbstractNioChannel {
 
     @Override
     protected final Object filterOutboundMessage(Object msg) {
+        // byteBuf的真正用于传输的数据
         if (msg instanceof ByteBuf) {
             ByteBuf buf = (ByteBuf) msg;
             if (buf.isDirect()) {
                 return msg;
             }
-
+            // 如果不是直接内存buffer，则将其封装为直接内存buffer
             return newDirectBuffer(buf);
         }
-
+        // 文件传输用的
         if (msg instanceof FileRegion) {
             return msg;
         }
-
+        // 不支持的消息类型
         throw new UnsupportedOperationException(
                 "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
     }
