@@ -32,8 +32,9 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * 轻量级的对象池，基于Thread-local栈。(对象存在线程独立内存)
+ * 轻量级的对象池，基于Thread-local栈(对象存在线程独立内存)。
  * (蝇量模式/享元模式)
+ * 该类的职责就是回收和分配对象。
  *
  * Light-weight object pool based on a thread-local stack.
  *
@@ -157,6 +158,7 @@ public abstract class Recycler<T> {
 
     @SuppressWarnings("unchecked")
     public final T get() {
+        // 每个线程最大容量为0，也就是不缓存对象，那么回收操作不处理即可
         if (maxCapacityPerThread == 0) {
             return newObject((Handle<T>) NOOP_HANDLE);
         }
@@ -197,7 +199,15 @@ public abstract class Recycler<T> {
 
     protected abstract T newObject(Handle<T> handle);
 
+    /**
+     * 句柄
+     * @param <T>
+     */
     public interface Handle<T> {
+        /**
+         * 回收对象
+         * @param object
+         */
         void recycle(T object);
     }
 

@@ -28,6 +28,11 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
+ * 将接收到的{@link ByteBuf}解码到一个字符串中。
+ * 请注意：请注意，此解码器必须与{@link ByteToMessageDecoder}一起使用，
+ * 例如{@link DelimiterBasedFrameDecoder}或{@link LineBasedFrameDecoder。
+ * 如果你正在使用一个基于流的传输，如TCP/IP。TCP/IP套接字中基于文本行的协议的典型设置是：
+ *
  * Decodes a received {@link ByteBuf} into a {@link String}.  Please
  * note that this decoder must be used with a proper {@link ByteToMessageDecoder}
  * such as {@link DelimiterBasedFrameDecoder} or {@link LineBasedFrameDecoder}
@@ -43,6 +48,8 @@ import java.util.List;
  * // Encoder
  * pipeline.addLast("stringEncoder", new {@link StringEncoder}(CharsetUtil.UTF_8));
  * </pre>
+ * 并且你可以使用{@link String}代替{@link ByteBuf}作为消息。
+ * <p>
  * and then you can use a {@link String} instead of a {@link ByteBuf}
  * as a message:
  * <pre>
@@ -76,6 +83,7 @@ public class StringDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) throws Exception {
+        // 将ByteBuf解码为字符串并添加到输出结果中
         out.add(msg.toString(charset));
     }
 }

@@ -16,21 +16,26 @@
 package io.netty.buffer;
 
 /**
+ * (内存)块的度量。
  * Metrics for a chunk.
  */
 public interface PoolChunkMetric {
 
     /**
+     * 返回当前块的使用百分比。
      * Return the percentage of the current usage of the chunk.
      */
     int usage();
 
     /**
-     * Return the size of the chunk in bytes, this is the maximum of bytes that can be served out of the chunk.
+     * 返回当前块的大小(以字节为单位)，这是该块能提供的最大字节数。
+     * Return the size of the chunk in bytes, this is the maximum of bytes
+     * that can be served out of the chunk.
      */
     int chunkSize();
 
     /**
+     * 返回该块中释放的字节数。
      * Return the number of free bytes in the chunk.
      */
     int freeBytes();

@@ -49,6 +49,7 @@ public interface ReferenceCounted {
      */
     int refCnt();
 
+    // 返回自己的这些方法其实用泛型会少写点，也不容易忘。
     /**
      * 增加对象的引用计数,引用计数+1.
      * 通常表示希望保存该对象一段时间。

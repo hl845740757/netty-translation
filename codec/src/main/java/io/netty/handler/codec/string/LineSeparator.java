@@ -21,11 +21,14 @@ import io.netty.util.internal.ObjectUtil;
 import io.netty.util.internal.StringUtil;
 
 /**
+ * 行分割符
+ *
  * A class to represent line separators in different environments.
  */
 public final class LineSeparator {
 
     /**
+     * 当前系统的行分隔符
      * The default line separator in the current system.
      */
     public static final LineSeparator DEFAULT = new LineSeparator(StringUtil.NEWLINE);

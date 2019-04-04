@@ -43,7 +43,7 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
      * 真正的引用计数是 refCnt>>>1。
      *
      * 没查看是哪个版本改成这样的，之前是1，直接进行加减操作。
-     * 当前版本复杂度高了很多。初步理解为为了解决溢出问题。
+     * 当前版本复杂度高了很多。看着是为了解决溢出问题。
      *
      * volatile：{@link AtomicIntegerFieldUpdater}要求字段必须是volatile的。
      */

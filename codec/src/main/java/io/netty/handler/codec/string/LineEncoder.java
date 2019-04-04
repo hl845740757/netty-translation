@@ -30,6 +30,12 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
+ * 行分隔符编码器。该编码器是不可变对象{ImmutableObject},因此是线程安全的，可共享。
+ * <p></p>
+ *
+ * 将行分隔符应用于请求的{@link String}并将其编码为{@link ByteBuf}。
+ * TCP/IP套接字中基于文本行的协议的典型设置是：
+ *
  * Apply a line separator to the requested {@link String} and encode it into a {@link ByteBuf}.
  * A typical setup for a text-based line protocol in a TCP/IP socket would be:
  * <pre>
@@ -42,6 +48,10 @@ import java.util.List;
  * // Encoder
  * pipeline.addLast("lineEncoder", new {@link LineEncoder}(LineSeparator.UNIX, CharsetUtil.UTF_8));
  * </pre>
+ *
+ * 并且你可以使用{@link String}代理{@link ByteBuf}作为消息对象：
+ * <p>
+ *
  * and then you can use a {@link String} instead of a {@link ByteBuf}
  * as a message:
  * <pre>
@@ -52,8 +62,13 @@ import java.util.List;
  */
 @Sharable
 public class LineEncoder extends MessageToMessageEncoder<CharSequence> {
-
+    /**
+     * 字符集
+     */
     private final Charset charset;
+    /**
+     * 行分隔符编码后的字节数组
+     */
     private final byte[] lineSeparator;
 
     /**
@@ -87,6 +102,8 @@ public class LineEncoder extends MessageToMessageEncoder<CharSequence> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, CharSequence msg, List<Object> out) throws Exception {
+        // lineSeparator.length extraCapacity
+        // 在编码字符串时同时申请了额外的空间，因此可以直接添加分隔符字符串
         ByteBuf buffer = ByteBufUtil.encodeString(ctx.alloc(), CharBuffer.wrap(msg), charset, lineSeparator.length);
         buffer.writeBytes(lineSeparator);
         out.add(buffer);

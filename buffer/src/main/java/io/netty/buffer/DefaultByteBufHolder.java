@@ -19,6 +19,8 @@ import io.netty.util.IllegalReferenceCountException;
 import io.netty.util.internal.StringUtil;
 
 /**
+ * 一个默认的(简单的)ByteBufHolder，它的数据存储在一个{@link ByteBuf}中。
+ *
  * Default implementation of a {@link ByteBufHolder} that holds it's data in a {@link ByteBuf}.
  *
  */

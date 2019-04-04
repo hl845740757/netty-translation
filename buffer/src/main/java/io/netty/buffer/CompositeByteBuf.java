@@ -45,8 +45,9 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
  * 推荐使用{@link ByteBufAllocator#compositeBuffer()} 或 {@link Unpooled#wrappedBuffer(ByteBuf...)}
  * 代替显示地调用构造方法。
  * <p>
- *     <li>个人觉得可能在池化中有很重要的作用，它可以将池中的零零碎碎的buffer合并之后使用，而不必创建那么多的Buffer</li>
- *     <li>Netty在池化中是否这样使用了并不确定/li>
+ *     <li>个人觉得可能在池化中有很重要的作用，它可以将池中的零零碎碎的buffer合并之后使用，而不必创建那么多的Buffer。</li>
+ *     <li>Netty在池化中是否这样使用了并不确定。/li>
+ *     <li>在合并消息时也会很有用。</li>
  * </p>
  *
  * A virtual buffer which shows multiple buffers as a single merged buffer.  It is recommended to use
@@ -62,9 +63,17 @@ public class CompositeByteBuf extends AbstractReferenceCountedByteBuf implements
     private final boolean direct;
     private final int maxNumComponents;
 
+    /**
+     * 组件的真正个数
+     */
     private int componentCount;
+    /**
+     * 存储组件的数组，必要时会重新调整大小，它的长度不代表组件个数
+     */
     private Component[] components; // resized when needed
-
+    /**
+     * 是否已释放(释放之后不可被访问)
+     */
     private boolean freed;
 
     private CompositeByteBuf(ByteBufAllocator alloc, boolean direct, int maxNumComponents, int initSize) {

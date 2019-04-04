@@ -22,6 +22,10 @@ import io.netty.util.Recycler.Handle;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * 池化的ByteBuf。既然是缓冲池中的ByteBuf，必然涉及到清空数据和初始化。
+ * @param <T>
+ */
 abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
 
     private final Recycler.Handle<PooledByteBuf<T>> recyclerHandle;
@@ -68,12 +72,18 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
     }
 
     /**
+     * {@link PooledByteBufAllocator}必须在重用该buffer之前调用该方法。
+     * <p></p>
      * Method must be called before reuse this {@link PooledByteBufAllocator}
      */
     final void reuse(int maxCapacity) {
+        // 设置最大容量，只是更新值，不会真正调整容量。
         maxCapacity(maxCapacity);
+        // 初始化引用计数
         setRefCnt(1);
+        // 初始化读写索引
         setIndex0(0, 0);
+        // 丢弃读写索引标记
         discardMarks();
     }
 
