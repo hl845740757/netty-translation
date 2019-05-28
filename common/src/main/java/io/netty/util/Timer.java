@@ -20,16 +20,20 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * (这句话不好翻译，也不太容易直接表述timer的功能。)
  * Schedules {@link TimerTask}s for one-time future execution in a background
  * thread.
  */
 public interface Timer {
 
     /**
+     * 在指定延迟之后执行(调度)给定的{@link TimerTask}。
+     *
      * Schedules the specified {@link TimerTask} for one-time execution after
      * the specified delay.
      *
-     * @return a handle which is associated with the specified task
+     * @return a handle which is associated with the specified task.
+     *         与该任务关联的{@link Timeout}
      *
      * @throws IllegalStateException       if this timer has been {@linkplain #stop() stopped} already
      * @throws RejectedExecutionException if the pending timeouts are too many and creating new timeout
@@ -38,6 +42,8 @@ public interface Timer {
     Timeout newTimeout(TimerTask task, long delay, TimeUnit unit);
 
     /**
+     * 释放该{@link Timer}持有的所有资源，并取消所有的已提交但还未执行的任务。
+     *
      * Releases all resources acquired by this {@link Timer} and cancels all
      * tasks which were scheduled but not executed yet.
      *

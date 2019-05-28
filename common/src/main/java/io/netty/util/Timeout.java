@@ -16,34 +16,44 @@
 package io.netty.util;
 
 /**
+ * 由{@link Timer}返回的关联{@link TimerTask}的句柄。
+ *
  * A handle associated with a {@link TimerTask} that is returned by a
  * {@link Timer}.
  */
 public interface Timeout {
 
     /**
+     * 返回创建该{@link Timeout}的{@link Timer}.
      * Returns the {@link Timer} that created this handle.
      */
     Timer timer();
 
     /**
+     * 返回该{@link Timeout}关联的 {@link TimerTask}.
      * Returns the {@link TimerTask} which is associated with this handle.
      */
     TimerTask task();
 
     /**
+     * 关联的{@link TimerTask}是否已过期
+     *
      * Returns {@code true} if and only if the {@link TimerTask} associated
      * with this handle has been expired.
      */
     boolean isExpired();
 
     /**
+     * 关联的{@link TimerTask}是否已取消。
      * Returns {@code true} if and only if the {@link TimerTask} associated
      * with this handle has been cancelled.
      */
     boolean isCancelled();
 
     /**
+     * 尝试取消关联的{@link TimerTask}。
+     * 如果关联的task已经执行，或者取消，那么它将返回true而不造成任何副作用(什么也不干).
+     *
      * Attempts to cancel the {@link TimerTask} associated with this handle.
      * If the task has been executed or cancelled already, it will return with
      * no side effect.

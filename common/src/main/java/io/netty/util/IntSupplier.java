@@ -16,6 +16,7 @@
 package io.netty.util;
 
 /**
+ * 和jdk的{@link java.util.function.IntSupplier}区别在于可以抛出异常。
  * Represents a supplier of {@code int}-valued results.
  */
 public interface IntSupplier {

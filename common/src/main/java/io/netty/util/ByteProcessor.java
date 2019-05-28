@@ -20,6 +20,8 @@ import static io.netty.util.ByteProcessorUtils.LINE_FEED;
 import static io.netty.util.ByteProcessorUtils.SPACE;
 
 /**
+ * {@link ByteProcessor}提供一种遍历字节集合的机制。
+ *
  * Provides a mechanism to iterate over a collection of bytes.
  */
 public interface ByteProcessor {
@@ -143,6 +145,8 @@ public interface ByteProcessor {
     /**
      * @return {@code true} if the processor wants to continue the loop and handle the next byte in the buffer.
      *         {@code false} if the processor wants to stop handling bytes and abort the loop.
+     *         如果返回{@code true}表示期望继续循环并且处理buffer中的下一个字节，如果返回{@code false}表示它响应停止字节处理
+     *         并终止循环。
      */
     boolean process(byte value) throws Exception;
 }

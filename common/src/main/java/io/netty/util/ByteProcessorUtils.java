@@ -15,6 +15,7 @@
 package io.netty.util;
 
 final class ByteProcessorUtils {
+
     static final byte SPACE = (byte) ' ';
     static final byte HTAB = (byte) '\t';
     static final byte CARRIAGE_RETURN = (byte) '\r';

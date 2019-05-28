@@ -17,6 +17,9 @@
 package io.netty.util;
 
 /**
+ * 非法引用计数异常。
+ * 当用户尝试访问一个引用计数为0的引用计数对象时，会抛出一个{@link IllegalReferenceCountException}异常
+ *
  * An {@link IllegalStateException} which is raised when a user attempts to access a {@link ReferenceCounted} whose
  * reference count has been decreased to 0 (and consequently freed).
  */

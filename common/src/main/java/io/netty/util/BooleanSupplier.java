@@ -16,6 +16,8 @@
 package io.netty.util;
 
 /**
+ * 代表一个boolean类型结果的supplier。
+ *
  * Represents a supplier of {@code boolean}-valued results.
  */
 public interface BooleanSupplier {
