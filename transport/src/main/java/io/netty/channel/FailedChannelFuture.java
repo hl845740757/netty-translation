@@ -19,6 +19,9 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.internal.PlatformDependent;
 
 /**
+ * 表示与{@link Channel}关联的操作早已失败。
+ * 推荐使用{@link Channel#newFailedFuture(Throwable)}代替直接使用构造方法。
+ *
  * The {@link CompleteChannelFuture} which is failed already.  It is
  * recommended to use {@link Channel#newFailedFuture(Throwable)}
  * instead of calling the constructor of this future.

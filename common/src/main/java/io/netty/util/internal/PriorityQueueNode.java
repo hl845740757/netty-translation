@@ -16,6 +16,9 @@
 package io.netty.util.internal;
 
 /**
+ * 优先级队列{@link DefaultPriorityQueue}的节点，它持有一些状态，
+ * 这些方法一般不允许{@link DefaultPriorityQueue}范围外的地方使用。
+ *
  * Provides methods for {@link DefaultPriorityQueue} to maintain internal state. These methods should generally not be
  * used outside the scope of {@link DefaultPriorityQueue}.
  */

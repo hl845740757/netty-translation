@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.RandomAccess;
 
 /**
+ * 可回收的{@link ArrayList}。
+ * 该实现不允许添加null元素。
+ *
  * A simple list which is recyclable. This implementation does not allow {@code null} elements to be added.
  */
 public final class RecyclableArrayList extends ArrayList<Object> {

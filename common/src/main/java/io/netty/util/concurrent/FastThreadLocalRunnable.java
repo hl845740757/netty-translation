@@ -18,7 +18,7 @@ package io.netty.util.concurrent;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * 对Runnable进行封装/代理
+ * 对Runnable进行封装/代理，可以保证安全的释放使用到的ThreadLocal变量。
  */
 final class FastThreadLocalRunnable implements Runnable {
     /**
@@ -35,10 +35,16 @@ final class FastThreadLocalRunnable implements Runnable {
         try {
             runnable.run();
         } finally {
+            // 移除该任务使用的FastThreadLocal变量，保证内存释放
             FastThreadLocal.removeAll();
         }
     }
 
+    /**
+     * 将普通的Runnable封装为{@link FastThreadLocalRunnable}。
+     * @param runnable 普通的任务
+     * @return FastThreadLocalRunnable
+     */
     static Runnable wrap(Runnable runnable) {
         return runnable instanceof FastThreadLocalRunnable ? runnable : new FastThreadLocalRunnable(runnable);
     }

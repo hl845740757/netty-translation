@@ -19,6 +19,9 @@ package io.netty.channel;
 import io.netty.util.concurrent.AbstractEventExecutor;
 
 /**
+ * 个人猜测之所以未使用是因为 {@link SingleThreadEventLoop}
+ * 和{@code EmbeddedEventLoop}没有需要提炼的地方
+ *
  * Skeletal implementation of {@link EventLoop}.
  */
 public abstract class AbstractEventLoop extends AbstractEventExecutor implements EventLoop {

@@ -183,6 +183,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     // endregion
 
     /**
+     * 使用lambda表达式封装不安全的运行任务，避免线程退出
      * Try to execute the given {@link Runnable} and just log if it throws a {@link Throwable}.
      */
     protected static void safeExecute(Runnable task) {

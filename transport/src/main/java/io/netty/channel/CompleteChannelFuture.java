@@ -21,7 +21,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 /**
- * 一个模板{@link ChannelFuture}的模板实现，它表示关联的{@link ChannelFuture}早已执行完毕。
+ * 一个模板{@link ChannelFuture}的模板实现，它表示关联的{@link ChannelFuture}上的操作早已执行完毕。
  *
  * A skeletal {@link ChannelFuture} implementation which represents a
  * {@link ChannelFuture} which has been completed already.

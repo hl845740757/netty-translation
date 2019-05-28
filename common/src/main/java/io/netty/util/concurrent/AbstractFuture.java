@@ -54,6 +54,7 @@ public abstract class AbstractFuture<V> implements Future<V> {
     public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         if (await(timeout, unit)) {
             Throwable cause = cause();
+            // 没有
             if (cause == null) {
                 return getNow();
             }

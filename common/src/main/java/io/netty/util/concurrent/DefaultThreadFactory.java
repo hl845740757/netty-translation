@@ -28,13 +28,33 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A {@link ThreadFactory} implementation with a simple naming rule.
  */
 public class DefaultThreadFactory implements ThreadFactory {
-
+    /**
+     * 全局线程池id，下一个线程池的线程工厂的id
+     */
     private static final AtomicInteger poolId = new AtomicInteger();
 
+    /**
+     * 该线程池内，下一个线程的id
+     */
     private final AtomicInteger nextId = new AtomicInteger();
+    /**
+     * 线程名字前缀
+     * {@code
+     * prefix = poolName + '-' + poolId.incrementAndGet() + '-';
+     * }
+     */
     private final String prefix;
+    /**
+     * 线程类型：true守护线程，false普通线程
+     */
     private final boolean daemon;
+    /**
+     * 线程优先级
+     */
     private final int priority;
+    /**
+     * 所属的线程组
+     */
     protected final ThreadGroup threadGroup;
 
     public DefaultThreadFactory(Class<?> poolType) {
@@ -85,6 +105,13 @@ public class DefaultThreadFactory implements ThreadFactory {
         }
     }
 
+    /**
+     * create a new instance
+     * @param poolName 线程池的名字
+     * @param daemon 是否是守护线程
+     * @param priority 线程优先级
+     * @param threadGroup 线程组
+     */
     public DefaultThreadFactory(String poolName, boolean daemon, int priority, ThreadGroup threadGroup) {
         if (poolName == null) {
             throw new NullPointerException("poolName");
@@ -93,7 +120,7 @@ public class DefaultThreadFactory implements ThreadFactory {
             throw new IllegalArgumentException(
                     "priority: " + priority + " (expected: Thread.MIN_PRIORITY <= priority <= Thread.MAX_PRIORITY)");
         }
-
+        // 线程名字前缀，线程池名字相同的时候，通过增加一个id来区分
         prefix = poolName + '-' + poolId.incrementAndGet() + '-';
         this.daemon = daemon;
         this.priority = priority;
@@ -109,10 +136,11 @@ public class DefaultThreadFactory implements ThreadFactory {
     public Thread newThread(Runnable r) {
         Thread t = newThread(FastThreadLocalRunnable.wrap(r), prefix + nextId.incrementAndGet());
         try {
+            // 改变线程类型
             if (t.isDaemon() != daemon) {
                 t.setDaemon(daemon);
             }
-
+            // 改变线程优先级
             if (t.getPriority() != priority) {
                 t.setPriority(priority);
             }
@@ -122,6 +150,12 @@ public class DefaultThreadFactory implements ThreadFactory {
         return t;
     }
 
+    /**
+     * 可覆盖的钩子方法，子类可以覆盖该方法，以创建不同的线程类型
+     * @param r 线程要执行的逻辑
+     * @param name 线程的名字
+     * @return thread 不同的子类对象
+     */
     protected Thread newThread(Runnable r, String name) {
         return new FastThreadLocalThread(threadGroup, r, name);
     }

@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 全局事件处理器。
+ *
  * 一个单线程的{@link EventExecutor}。它会自动的启动和停止它的线程当1秒之内没有任务填充到它的任务队列时。
  * 请注意：该Executor不可扩展用于调度大量的任务，请使用专用的线程。
  *
@@ -40,12 +42,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(GlobalEventExecutor.class);
-
+    /**
+     * 线程调度安静时间（指定时间内无任务提交时，将自动关闭线程）
+     */
     private static final long SCHEDULE_QUIET_PERIOD_INTERVAL = TimeUnit.SECONDS.toNanos(1);
-
+    /**
+     * 单例对象
+     */
     public static final GlobalEventExecutor INSTANCE = new GlobalEventExecutor();
-
+    /**
+     * 任务队列。
+     * 包含{@link #execute(Runnable)}提交的任务和从{@link #scheduledTaskQueue}拉取过来的任务。
+     */
     final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
+    /**
+     * 安静期任务，它是一个标记任务
+     */
     final ScheduledFutureTask<Void> quietPeriodTask = new ScheduledFutureTask<Void>(
             this, Executors.<Void>callable(new Runnable() {
         @Override
@@ -60,26 +72,43 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
     // visible for testing
     final ThreadFactory threadFactory =
             new DefaultThreadFactory(DefaultThreadFactory.toPoolName(getClass()), false, Thread.NORM_PRIORITY, null);
+
+    /**
+     * 线程运行逻辑，见名知意--执行提交的任务
+     */
     private final TaskRunner taskRunner = new TaskRunner();
+    /**
+     * 线程启动状态，线程是否已启动，它为什么是安全的？因为是线程自身来关闭
+     */
     private final AtomicBoolean started = new AtomicBoolean();
+    /**
+     * EventExecutor持有的线程对象，它是可以安全访问指定数据(线程封闭数据)的线程。
+     */
     volatile Thread thread;
 
     private final Future<?> terminationFuture = new FailedFuture<Object>(this, new UnsupportedOperationException());
 
     private GlobalEventExecutor() {
+        // 初始化队列，并填充一个标记任务
         scheduledTaskQueue().add(quietPeriodTask);
     }
 
     /**
+     * 从taskQueue中取出下一个执行的任务，如果当前没有任务存在，则会阻塞。
+     *
      * Take the next {@link Runnable} from the task queue and so will block if no task is currently present.
      *
      * @return {@code null} if the executor thread has been interrupted or waken up.
      */
     Runnable takeTask() {
+        // taskQueue 包含{@link #execute(Runnable)}提交的任务和从{@link #scheduledTaskQueue}拉取过来的任务。
+        // 注意 taskQueue 中包含的任务，否则会看懵逼
         BlockingQueue<Runnable> taskQueue = this.taskQueue;
         for (;;) {
+            // 查看是否有待执行的周期性调度的任务，如果有的话，不可以无限制的在taskQueue上等待
             ScheduledFutureTask<?> scheduledTask = peekScheduledTask();
             if (scheduledTask == null) {
+                // 当前无等待调度的任务，因此可以采用take，阻塞直到taskQueue中提交新任务。
                 Runnable task = null;
                 try {
                     task = taskQueue.take();
@@ -88,9 +117,12 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                 }
                 return task;
             } else {
+                // 当前有等待调度的任务，不可以采用无限制的take，必须在任务下次调度前醒来
                 long delayNanos = scheduledTask.delayNanos();
                 Runnable task;
                 if (delayNanos > 0) {
+                    // 有周期性调度任务，但还没到执行时间，这个时候需要尝试取出一个普通任务，
+                    // 但是需要在周期性任务下次调度前醒来，因此是在taskQueue上等待delayNanos
                     try {
                         task = taskQueue.poll(delayNanos, TimeUnit.NANOSECONDS);
                     } catch (InterruptedException e) {
@@ -98,14 +130,19 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                         return null;
                     }
                 } else {
+                    // scheduledTask 可以执行了，这里为啥在taskQueue上poll？？？
+                    // 因为可调度的任务必须先进入taskQueue，注意 fetchFromScheduledTaskQueue 方法。
+                    // 如果 scheduledTask 可执行，那么taskQueue中可能已经存在比它优先级更高的任务。
                     task = taskQueue.poll();
                 }
 
+                // 如果taskQueue不包含可执行的任务，那么就会从scheduledTaskQueue中拉取可能执行的任务到taskQueue
                 if (task == null) {
                     fetchFromScheduledTaskQueue();
                     task = taskQueue.poll();
                 }
 
+                // 获取到一个可执行任务，返回
                 if (task != null) {
                     return task;
                 }
@@ -113,6 +150,9 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         }
     }
 
+    /**
+     * 获取最新的可执行任务到{@link #taskQueue}，这样所有可执行的任务都从taskQueue中获取。
+     */
     private void fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
         Runnable scheduledTask = pollScheduledTask(nanoTime);
@@ -211,7 +251,10 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
             throw new NullPointerException("task");
         }
 
+        // 添加到任务队列，这里不是优先队列，而不普通的线程安全队列
         addTask(task);
+
+        // 另一个线程提交任务时需要启动EventLoop线程
         if (!inEventLoop()) {
             startThread();
         }
@@ -219,6 +262,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
 
     private void startThread() {
         if (started.compareAndSet(false, true)) {
+            // 通过任务创建线程，由于任务是死循环任务，因此独占该线程
             final Thread t = threadFactory.newThread(taskRunner);
             // Set to null to ensure we not create classloader leaks by holds a strong reference to the inherited
             // classloader.
@@ -236,6 +280,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
             // Set the thread before starting it as otherwise inEventLoop() may return false and so produce
             // an assert error.
             // See https://github.com/netty/netty/issues/4357
+            // 先赋值再启动才具有happens-before关系，新线程才能看见thread属性为自己
             thread = t;
             t.start();
         }
@@ -245,6 +290,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         @Override
         public void run() {
             for (;;) {
+                // 不断的取出任务执行
                 Runnable task = takeTask();
                 if (task != null) {
                     try {
@@ -252,13 +298,14 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                     } catch (Throwable t) {
                         logger.warn("Unexpected exception from the global event executor: ", t);
                     }
-
+                    // 如果不是安静期任务，则继续执行，如果是则表示可能没有新任务了
                     if (task != quietPeriodTask) {
                         continue;
                     }
                 }
 
                 Queue<ScheduledFutureTask<?>> scheduledTaskQueue = GlobalEventExecutor.this.scheduledTaskQueue;
+                // 如果只存在quietPeriodTask，则表示没有新任务提交，需要关闭线程
                 // Terminate if there is no task in the queue (except the noop task).
                 if (taskQueue.isEmpty() && (scheduledTaskQueue == null || scheduledTaskQueue.size() == 1)) {
                     // Mark the current thread as stopped.

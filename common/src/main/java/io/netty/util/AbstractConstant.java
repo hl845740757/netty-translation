@@ -30,6 +30,9 @@ public abstract class AbstractConstant<T extends AbstractConstant<T>> implements
 
     private final int id;
     private final String name;
+    /**
+     * 唯一id
+     */
     private final long uniquifier;
 
     /**

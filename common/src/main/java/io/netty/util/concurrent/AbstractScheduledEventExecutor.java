@@ -44,7 +44,11 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
             };
 
     /**
-     * 调度的任务队列
+     * 可调度的任务队列，底层的实现多为优先检查周期性调度的任务，其次执行提交的普通任务。
+     *
+     * 它本身不是线程安全的，但它是线程封闭的，它只由执行任务的线程访问{@link #inEventLoop(Thread)}。
+     * 当不是执行任务的线程时，任务不直接插入到队列，而是提交一个任务，由执行逻辑的线程插入到队列，并最终执行。
+     * 这样的好处是啥呢？没有线程安全的优先级队列，使用这种方式可以减少对锁的使用，否则需要锁整个对象。
      */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue;
 
@@ -55,13 +59,16 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         super(parent);
     }
 
-    // 获取过去的纳秒数
+    /**
+     * 获取过去的纳秒数
+     * @return long
+     */
     protected static long nanoTime() {
         return ScheduledFutureTask.nanoTime();
     }
 
     /**
-     * 获取默认的
+     * 获取默认的周期性任务队列，它不是线程安全的
      * @return
      */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue() {
@@ -113,6 +120,8 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
+     * 弹出可执行的优先级最高的任务，如果没有可执行的任务则返回null。
+     *
      * Return the {@link Runnable} which is ready to be executed with the given {@code nanoTime}.
      * You should use {@link #nanoTime()} to retrieve the correct {@code nanoTime}.
      */
@@ -120,11 +129,13 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         assert inEventLoop();
 
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
+        // peek只检测队列的首元素，不对队列结构造成影响，是一个消耗很低的操作。
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
         if (scheduledTask == null) {
             return null;
         }
-
+        // 确定优先级最高的任务需要执行时，才真正从队列中删除。
+        // 如果先删除再插入，就是一个相对高消耗的操作，而先peek再删除可以有更好的性能。
         if (scheduledTask.deadlineNanos() <= nanoTime) {
             scheduledTaskQueue.remove();
             return scheduledTask;
@@ -144,6 +155,15 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         return Math.max(0, scheduledTask.deadlineNanos() - nanoTime());
     }
 
+    /**
+     * 查看周期性调度任务中优先级最高的任务。
+     * 周期性调度的任务优先级高于普通任务队列中的任务。
+     * (底层的实现多为优先检查周期性调度的任务，其次执行提交的普通任务).
+     *
+     * 如果不存在则返回null，否则返回当前优先级最高的任务
+     *
+     * @return null/ScheduledFutureTask
+     */
     final ScheduledFutureTask<?> peekScheduledTask() {
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
         if (scheduledTaskQueue == null) {
@@ -245,8 +265,11 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
 
     <V> ScheduledFuture<V> schedule(final ScheduledFutureTask<V> task) {
         if (inEventLoop()) {
+            // EventLoop线程添加的任务，EventLoop线程可以安全的访问线程封闭的数据
             scheduledTaskQueue().add(task);
         } else {
+            // netty中充满了大量的这种设计，当不是同一个线程时，提交一个任务，
+            // 由执行线程插入对象，而不是当前线程插入到队列，以实现线程安全。
             execute(new Runnable() {
                 @Override
                 public void run() {

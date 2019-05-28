@@ -18,6 +18,10 @@ package io.netty.util.concurrent;
 import java.util.concurrent.Callable;
 import java.util.concurrent.RunnableFuture;
 
+/**
+ * 该类的含义可对比{@link java.util.concurrent.FutureTask}
+ * @param <V>
+ */
 class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     static <T> Callable<T> toCallable(Runnable runnable, T result) {
@@ -29,7 +33,15 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
      * @param <T>
      */
     private static final class RunnableAdapter<T> implements Callable<T> {
+        /**
+         * 任务逻辑
+         */
         final Runnable task;
+        /**
+         * 结果对象，其实是结果容器。
+         * 如果需要结果的话，task内部会持有该对象并在完成任务时将结果存在该结果容器对象。
+         * 只有task本身知道如何使用该对象。
+         */
         final T result;
 
         RunnableAdapter(Runnable task, T result) {
@@ -40,6 +52,7 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         @Override
         public T call() {
             task.run();
+            // 结果已写入result，如果需要返回结果的话，这是task内部的逻辑。
             return result;
         }
 
@@ -82,40 +95,80 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         }
     }
 
+    /**
+     * {@link PromiseTask}的结果由自己赋值，因此外部赋值抛出异常
+     * @param cause
+     * @return
+     */
     @Override
     public final Promise<V> setFailure(Throwable cause) {
         throw new IllegalStateException();
     }
 
+    /**
+     * 这是内部赋值失败的方法，不是对外的
+     * @param cause
+     * @return
+     */
     protected final Promise<V> setFailureInternal(Throwable cause) {
         super.setFailure(cause);
         return this;
     }
 
+    /**
+     * {@link PromiseTask}的结果由自己赋值，因此外部赋值总是失败
+     * @param cause
+     * @return
+     */
     @Override
     public final boolean tryFailure(Throwable cause) {
         return false;
     }
 
+    /**
+     * 内部赋值失败的方法
+     * @param cause
+     * @return
+     */
     protected final boolean tryFailureInternal(Throwable cause) {
         return super.tryFailure(cause);
     }
 
+    /**
+     * {@link PromiseTask}的结果由自己赋值，因此外部赋值抛出异常。
+     * @param result
+     * @return
+     */
     @Override
     public final Promise<V> setSuccess(V result) {
         throw new IllegalStateException();
     }
 
+    /**
+     * 内部赋值成功的方法
+     * @param result
+     * @return
+     */
     protected final Promise<V> setSuccessInternal(V result) {
         super.setSuccess(result);
         return this;
     }
 
+    /**
+     * {@link PromiseTask}的结果由自己赋值，因此外部赋值总是失败
+     * @param result
+     * @return
+     */
     @Override
     public final boolean trySuccess(V result) {
         return false;
     }
 
+    /**
+     * 内部尝试赋值成功的方法
+     * @param result
+     * @return
+     */
     protected final boolean trySuccessInternal(V result) {
         return super.trySuccess(result);
     }

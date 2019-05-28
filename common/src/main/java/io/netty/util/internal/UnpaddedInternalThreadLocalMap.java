@@ -31,7 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * unless you know what you are doing.
  */
 class UnpaddedInternalThreadLocalMap {
-
+    /**
+     * 低效的ThreadLocalMap，当线程不是{@link io.netty.util.concurrent.FastThreadLocalThread}时，
+     * 在该ThreadLocalMap中获取数据。
+     */
     static final ThreadLocal<InternalThreadLocalMap> slowThreadLocalMap = new ThreadLocal<InternalThreadLocalMap>();
     static final AtomicInteger nextIndex = new AtomicInteger();
 

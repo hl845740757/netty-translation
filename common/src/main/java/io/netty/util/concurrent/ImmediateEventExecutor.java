@@ -23,6 +23,14 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 立即执行的EventExecutor —— 调用者执行
+ * 含义可参考{@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy}。
+ * 提交的任务的线程立即执行它所提交的任务。如果{@link #execute(Runnable)}是可重入的，
+ * 那么该任务将会压入队列直到原始的{@link Runnable}完成执行。
+ * <p>
+ * {@link #execute(Runnable)} 抛出的所有异常都将被吞没并记录一个日志。目的是确保所有压入队列的任务都有机会执行。
+ * </p>
+ *
  * Executes {@link Runnable} objects in the caller's thread. If the {@link #execute(Runnable)} is reentrant it will be
  * queued until the original {@link Runnable} finishes execution.
  * <p>
@@ -106,6 +114,7 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
             throw new NullPointerException("command");
         }
         if (!RUNNING.get()) {
+            // 如果提交任务的时候，没有正在执行的任务，则立即执行提交的任务
             RUNNING.set(true);
             try {
                 command.run();
@@ -114,6 +123,7 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
             } finally {
                 Queue<Runnable> delayedRunnables = DELAYED_RUNNABLES.get();
                 Runnable runnable;
+                // 检查该线程(任务)提交的所有任务，知道所有任务执行完毕
                 while ((runnable = delayedRunnables.poll()) != null) {
                     try {
                         runnable.run();
@@ -124,6 +134,8 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
                 RUNNING.set(false);
             }
         } else {
+            // 如果该线程提交任务的时候，有任务正在执行，则将任务压入队列，什么情况下会出现呢？
+            // 当正在执行的任务会提交新的任务时就会产生。
             DELAYED_RUNNABLES.get().add(command);
         }
     }

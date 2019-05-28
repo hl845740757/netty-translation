@@ -43,15 +43,17 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * 单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
+ * 核心类:单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
  *
- * 它的实现很简单：就是提交一个任务到给定Executor。一般该任务就是个死循环，因此给定的Executor必须能创建足够多的线程，否则会无法执行。
+ *
+ * 它的实现很简单：就是提交一个任务到给定Executor。提交一个死循环任务，以占用这个线程。
+ * 因此给定的Executor必须能创建足够多的线程，否则会无法执行。
  * <li>它真正的处理所有的提交的任务或事件。</li>
  * <li>与之相对的是{@link MultithreadEventExecutorGroup}</li>
  *
  * 那为什么会觉得有点别扭呢？
- * {@link SingleThreadEventExecutor}是一个单线程的Executor,它只有一个线程，
- * 只是它的线程不是自己创建的，也不是使用线程工厂创建的，而是通过提交一个死循环的任务到被包装的Executor得到的。
+ * {@link SingleThreadEventExecutor}是一个单线程的Executor,只是它的线程不是自己创建的，
+ * 也不是使用线程工厂创建的，而是通过提交一个死循环的任务到被包装的Executor得到的。
  * 包装的有点厉害。
  * <p>
  *
@@ -65,19 +67,40 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private static final InternalLogger logger =
             InternalLoggerFactory.getInstance(SingleThreadEventExecutor.class);
-
+    /**
+     * 尚未启动状态。
+     * EventLoop/线程的状态
+     */
     private static final int ST_NOT_STARTED = 1;
+    /**
+     * 已启动状态
+     */
     private static final int ST_STARTED = 2;
+    /**
+     * 正在关闭状态
+     */
     private static final int ST_SHUTTING_DOWN = 3;
+    /**
+     * 已关闭状态
+     */
     private static final int ST_SHUTDOWN = 4;
+    /**
+     * 已终止状态
+     */
     private static final int ST_TERMINATED = 5;
 
+    /**
+     * 填充任务，提交给executor，用于唤醒正在关闭的线程
+     */
     private static final Runnable WAKEUP_TASK = new Runnable() {
         @Override
         public void run() {
             // Do nothing.
         }
     };
+    /**
+     * 填充任务，提交给executor，用于启动EventLoop线程
+     */
     private static final Runnable NOOP_TASK = new Runnable() {
         @Override
         public void run() {
@@ -96,26 +119,51 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     private final Queue<Runnable> taskQueue;
     /**
-     * 该executor持有的线程。核心属性
+     * 该executor持有的线程。核心属性。
      *
-     * 使用volatile的原因是：该属性由创建的新线程赋值，但是可以被外部线程访问到。
+     * 使用volatile的原因是：该属性由占有线程的任务赋值，但是可以被外部线程访问到。
      * {@link #inEventLoop(Thread)} 这里存在可见性问题，因此需要volatile
      */
     private volatile Thread thread;
-
+    /**
+     * 线程的属性
+     */
     @SuppressWarnings("unused")
     private volatile ThreadProperties threadProperties;
+    /**
+     * 依赖的{@link Executor},线程由executor创建。
+     */
     private final Executor executor;
+    /**
+     * 是否被中断
+     */
     private volatile boolean interrupted;
-
+    /**
+     * 默认资源为0的信号量，也就是说：除非先释放资源否则无法申请资源
+     */
     private final Semaphore threadLock = new Semaphore(0);
+    /**
+     * 线程关闭钩子，当线程要退出时，执行这些关闭钩子
+     */
     private final Set<Runnable> shutdownHooks = new LinkedHashSet<Runnable>();
+    /**
+     *
+     */
     private final boolean addTaskWakesUp;
+    /**
+     * 最大填充任务数
+     */
     private final int maxPendingTasks;
+    /**
+     * 任务拒接策略
+     */
     private final RejectedExecutionHandler rejectedExecutionHandler;
 
     private long lastExecutionTime;
 
+    /**
+     * 线程的状态
+     */
     @SuppressWarnings({ "FieldMayBeFinal", "unused" })
     private volatile int state = ST_NOT_STARTED;
 
@@ -181,6 +229,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                                         RejectedExecutionHandler rejectedHandler) {
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
+        // 最左只允许16个任务
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
         taskQueue = newTaskQueue(this.maxPendingTasks);
@@ -196,6 +245,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 这是一个工厂方法，子类可以覆盖它以创建不同类型的队列。
      * Create a new {@link Queue} which will holds the tasks to execute. This default implementation will return a
      * {@link LinkedBlockingQueue} but if your sub-class of {@link SingleThreadEventExecutor} will not do any blocking
      * calls on the this {@link Queue} it may make sense to {@code @Override} this and return some more performant
@@ -206,13 +256,17 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 中断当前运行的线程
      * Interrupt the current running {@link Thread}.
      */
     protected void interruptThread() {
         Thread currentThread = thread;
         if (currentThread == null) {
+            // 当前还没有新建线程，那么可以中断
+            // 讲道理这是一个先检查后执行的操作，这不安全
             interrupted = true;
         } else {
+            // 当前已新建线程，那么中断它使用的线程
             currentThread.interrupt();
         }
     }
@@ -236,6 +290,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 从任务队列中取出下一个执行的{@link Runnable}，并且如果当前没有任务存在的话则会阻塞。
+     * 注意：如果{@link #newTaskQueue()}返回的对象没有实现{@link BlockingQueue}则会抛出一个
+     * {@link UnsupportedOperationException}异常。
+     * <p>
+     *
      * Take the next {@link Runnable} from the task queue and so will block if no task is currently present.
      * <p>
      * Be aware that this method will throw an {@link UnsupportedOperationException} if the task queue, which was
@@ -245,15 +304,19 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * @return {@code null} if the executor thread has been interrupted or waken up.
      */
     protected Runnable takeTask() {
+        // 调用该方法的线程必须是EventLoop线程自己
         assert inEventLoop();
+        // 只支持阻塞队列
         if (!(taskQueue instanceof BlockingQueue)) {
             throw new UnsupportedOperationException();
         }
 
         BlockingQueue<Runnable> taskQueue = (BlockingQueue<Runnable>) this.taskQueue;
         for (;;) {
+            // 先尝试取出一个可调度的任务
             ScheduledFutureTask<?> scheduledTask = peekScheduledTask();
             if (scheduledTask == null) {
+                // 如果当前没有可调度的任务，则查看任务队列
                 Runnable task = null;
                 try {
                     task = taskQueue.take();
@@ -344,6 +407,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    /**
+     * 将任务压入队列
+     * @param task 任务
+     * @return true/false，如果线程已关闭则抛出异常，否则压入成功则返回true，失败false
+     */
     final boolean offerTask(Runnable task) {
         if (isShutdown()) {
             reject();
@@ -494,10 +562,16 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     protected abstract void run();
 
     /**
+     * 在线程退出前需要执行什么清理操作可以覆盖该方法。
      * Do nothing, sub-classes may override
      */
     protected void cleanup() {
         // NOOP
+    }
+
+    @Override
+    public boolean inEventLoop(Thread thread) {
+        return thread == this.thread;
     }
 
     protected void wakeup(boolean inEventLoop) {
@@ -506,16 +580,6 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             // is already something in the queue.
             taskQueue.offer(WAKEUP_TASK);
         }
-    }
-
-    /**
-     *
-     * @param thread
-     * @return
-     */
-    @Override
-    public boolean inEventLoop(Thread thread) {
-        return thread == this.thread;
     }
 
     /**
@@ -772,6 +836,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return isTerminated();
     }
 
+    /**
+     * 执行一个任务，
+     * @param task
+     */
     @Override
     public void execute(Runnable task) {
         if (task == null) {
@@ -798,7 +866,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 }
             }
         }
-
+        // ?
         if (!addTaskWakesUp && wakesUpForTask(task)) {
             wakeup(inEventLoop);
         }

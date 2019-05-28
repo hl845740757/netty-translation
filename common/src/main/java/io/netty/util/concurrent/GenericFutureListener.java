@@ -18,8 +18,7 @@ package io.netty.util.concurrent;
 import java.util.EventListener;
 
 /**
- *
- * 通用Future监听器。
+ * 泛型化的Future监听器。
  *
  * 监听{@link Future}的计算结果。
  * 一旦listener通过{@link Future#addListener(GenericFutureListener)}添加到ChannelFuture上，

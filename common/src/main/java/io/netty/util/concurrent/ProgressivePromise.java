@@ -16,11 +16,13 @@
 package io.netty.util.concurrent;
 
 /**
+ * 一个特殊的可写的{@link ProgressiveFuture}
  * Special {@link ProgressiveFuture} which is writable.
  */
 public interface ProgressivePromise<V> extends Promise<V>, ProgressiveFuture<V> {
 
     /**
+     * 更新当前操作的进度，并通知{@link GenericProgressiveFutureListener}类型的监听器。
      * Sets the current progress of the operation and notifies the listeners that implement
      * {@link GenericProgressiveFutureListener}.
      */

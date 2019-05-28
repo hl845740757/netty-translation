@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
+ * 无序的基于线程池的EventExecutor，
+ *
  * {@link EventExecutor} implementation which makes no guarantees about the ordering of task execution that
  * are submitted because there may be multiple threads executing these tasks.
  * This implementation is most useful for protocols that do not need strict ordering.

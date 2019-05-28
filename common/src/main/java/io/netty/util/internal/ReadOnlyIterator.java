@@ -18,7 +18,12 @@ package io.netty.util.internal;
 
 import java.util.Iterator;
 
+/**
+ * 只读的迭代器，对其它迭代的封装，在删除时抛出异常。
+ * @param <T>
+ */
 public final class ReadOnlyIterator<T> implements Iterator<T> {
+
     private final Iterator<? extends T> iterator;
 
     public ReadOnlyIterator(Iterator<? extends T> iterator) {
@@ -38,6 +43,9 @@ public final class ReadOnlyIterator<T> implements Iterator<T> {
         return iterator.next();
     }
 
+    /**
+     * 删除时抛出异常。
+     */
     @Override
     public void remove() {
         throw new UnsupportedOperationException("read-only");

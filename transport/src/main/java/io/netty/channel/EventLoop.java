@@ -18,6 +18,9 @@ package io.netty.channel;
 import io.netty.util.concurrent.OrderedEventExecutor;
 
 /**
+ * EventLoop是一个特殊的{@link io.netty.util.concurrent.EventExecutor},
+ * 它只有单个线程，且是事件循环的运行模式。
+ *
  * {@link EventLoop}将会处理注册到它上面的{@link Channel}的所有IO操作。
  *
  * 一个{@link EventLoop}在其生命周期中，只会绑定在同一个线程上。

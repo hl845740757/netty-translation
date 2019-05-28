@@ -29,6 +29,9 @@ import java.util.concurrent.TimeUnit;
  * 1.通过它的 {@link #next()} 方法提供 {@link EventExecutor}
  * 2. 此外，还负责 {@link EventExecutor} 的生命周期，允许使用全局统一的方式关闭他们。--- fashion(时尚，方法，方式)
  *
+ * 总的来说：它并不直接处理用户请求，而是将请求转交给它所持有的执行单元。它管理它持有的执行单元的生命周期。
+ * 它代表的是一组线程服务的高级封装。
+ *
  * EventExecutorGroup是Netty中的事件服务(事件处理器你)的顶层接口。
  * Netty中从 EventExecutor 渐渐地演化到 EventLoop，赋予它更明确的意义。(归纳与演进)
  *
@@ -39,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * EventExecutorGroup 与 EventExecutor 之间的关系就是容器与容器内的元素这样的关系。
  * 可以看做是设计模式中的组合模式的，EventExecutorGroup 既是顶层的 Component，也是容器节点，而EventExecutor是叶子节点。
  *
- * 在Netty的设计中：带Group/Multi的是多线程，而不带的基本都是单线程。
+ * 在Netty的设计中：带Group/Multi的是多线程(容器)，而不带的基本都是单线程(执行单元)。
  * {@link EventExecutorGroup}就是多线程的顶层接口，{@link EventExecutor}就是单线程的顶层接口。
  *
  * The {@link EventExecutorGroup} is responsible for providing the {@link EventExecutor}'s to use
@@ -48,6 +51,17 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<EventExecutor> {
+
+    /**
+     * 分配下一个执行任务的{@link EventExecutor}。
+     * {@link EventExecutorGroup}管理着一组{@link EventExecutor}，由它们真正的执行任务(请求)。
+     * 在返回{@link EventExecutor}时需要尽可能的负载均衡。
+     *
+     * (该方法比较重要，因此我挪动到最上面)
+     *
+     * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.
+     */
+    EventExecutor next();
 
     /**
      * 查询{@link EventExecutorGroup}是否处于正在关闭状态。
@@ -86,13 +100,14 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      *                    regardless if a task was submitted during the quiet period
      *                    等待当前executor成功关闭的超时时间，而不管是否有任务在关闭前的安静期提交。
      * @param unit        the unit of {@code quietPeriod} and {@code timeout}
+     *                    quietPeriod 和 timeout 的时间单位。
      *
      * @return the {@link #terminationFuture()}
      */
     Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit);
 
     /**
-     * Future模式
+     * 返回等待线程终止的future。
      * 返回的{@link Future}会在该Group管理的所有{@link EventExecutor}终止后收到一个通知
      *
      * Returns the {@link Future} which is notified when all {@link EventExecutor}s managed by this
@@ -118,11 +133,6 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     @Override
     @Deprecated
     List<Runnable> shutdownNow();
-
-    /**
-     * Returns one of the {@link EventExecutor}s managed by this {@link EventExecutorGroup}.
-     */
-    EventExecutor next();
 
     @Override
     Iterator<EventExecutor> iterator();

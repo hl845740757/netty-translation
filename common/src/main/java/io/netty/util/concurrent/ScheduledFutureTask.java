@@ -28,13 +28,23 @@ import java.util.concurrent.atomic.AtomicLong;
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFuture<V>, PriorityQueueNode {
     private static final AtomicLong nextTaskId = new AtomicLong();
+    /**
+     * 全局起始时间偏移量
+     */
     private static final long START_TIME = System.nanoTime();
-
-    // 获取过去的纳秒数
+    /**
+     * 获取过去的纳秒数
+     * @return long
+     */
     static long nanoTime() {
         return System.nanoTime() - START_TIME;
     }
 
+    /**
+     * 通过延迟时间获取任务的结束时间
+     * @param delay 任务的延迟(第一次执行的延迟)
+     * @return
+     */
     static long deadlineNanos(long delay) {
         long deadlineNanos = nanoTime() + delay;
         // Guard against overflow
@@ -42,8 +52,17 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     }
 
     private final long id = nextTaskId.getAndIncrement();
+    /**
+     * 下次执行的时间戳
+     */
     private long deadlineNanos;
-    /* 0 - no repeat, >0 - repeat at fixed rate, <0 - repeat with fixed delay */
+
+    /**
+     * 0 - no repeat, —— 0表示只执行一次，
+     * >0 - repeat at fixed rate, —— >0 表示固定频率执行，固定频率执行会尽量使得满足执行频率(比如1秒10次)，下次执行时间 = deadlineNanos + p，
+     * <0 - repeat with fixed dela —— <0 表示固定延迟执行，固定延迟着重与保持两次执行之间的间隔，而不保证频率，下次执行时间 = nanoTime() - p，
+     * 总的来说这个设定不是很方便使用。
+     */
     private final long periodNanos;
 
     private int queueIndex = INDEX_NOT_IN_QUEUE;
@@ -85,7 +104,12 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return deadlineNanos;
     }
 
+    /**
+     * 获取下次执行延迟时间
+     * @return long
+     */
     public long delayNanos() {
+        // deadlineNanos() - nanoTime() 表示剩余延迟
         return Math.max(0, deadlineNanos() - nanoTime());
     }
 
@@ -123,6 +147,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     public void run() {
         assert executor().inEventLoop();
         try {
+            // 只执行一次
             if (periodNanos == 0) {
                 if (setUncancellableInternal()) {
                     V result = task.call();
@@ -135,15 +160,22 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                     if (!executor().isShutdown()) {
                         long p = periodNanos;
                         if (p > 0) {
+                            // 固定频率执行，固定频率执行会尽量使得满足执行频率(比如1秒10次)
                             deadlineNanos += p;
                         } else {
+                            // 固定延迟执行，固定延迟着重与保持两次执行之间的间隔，而不保证频率
                             deadlineNanos = nanoTime() - p;
                         }
                         if (!isCancelled()) {
+                            // scheduledTaskQueue一定不会为null，因为在提交任务之前已经进行了延迟初始化。
+                            // 是这样的：该任务就是从任务队列弹出的，因此走到该代码块的时候，队列一定存在。
+
                             // scheduledTaskQueue can never be null as we lazy init it before submit the task!
                             Queue<ScheduledFutureTask<?>> scheduledTaskQueue =
                                     ((AbstractScheduledEventExecutor) executor()).scheduledTaskQueue;
                             assert scheduledTaskQueue != null;
+
+                            // 执行完毕之后重新压入队列，重新调整堆结构
                             scheduledTaskQueue.add(this);
                         }
                     }

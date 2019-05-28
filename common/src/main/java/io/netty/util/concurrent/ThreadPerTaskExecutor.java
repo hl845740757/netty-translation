@@ -18,7 +18,12 @@ package io.netty.util.concurrent;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * ThreadPerMessage Design Pattern
+ * 不推荐使用，会造成大量的资源浪费。
+ */
 public final class ThreadPerTaskExecutor implements Executor {
+
     private final ThreadFactory threadFactory;
 
     public ThreadPerTaskExecutor(ThreadFactory threadFactory) {
@@ -30,6 +35,7 @@ public final class ThreadPerTaskExecutor implements Executor {
 
     @Override
     public void execute(Runnable command) {
+        // 为每一个任务新建一个线程
         threadFactory.newThread(command).start();
     }
 }

@@ -16,6 +16,11 @@
 package io.netty.util.concurrent;
 
 /**
+ * {@link EventExecutor}是{@link EventExecutorGroup}中的成员，它是真正执行事件处理的单元。
+ * 它继承自{@link EventExecutorGroup}表示它可以作为一个只有单个成员的{@link EventExecutorGroup}进行服务。
+ * 它代表着一个线程服务的高级封装，一个{@link EventExecutor}可以有任意个数的线程。
+ * {@link SingleThreadEventExecutor}
+ * {@link UnorderedThreadPoolEventExecutor}将{@link EventExecutor}。
  *
  * 事件执行器，它是一种特殊的{@link EventExecutorGroup},其作用就是主处理事件。
  * 它附带了一些简单方法去查看一个线程是否运行在EventLoop中。
@@ -36,6 +41,9 @@ public interface EventExecutor extends EventExecutorGroup {
 
     /**
      * 返回它自身的一个引用。
+     * {@link EventExecutor}表示持有一个{@link EventExecutor}的{@link EventExecutorGroup}，
+     * 因此它总是返回自身进行服务。
+     *
      * Returns a reference to itself.
      */
     @Override
@@ -44,21 +52,31 @@ public interface EventExecutor extends EventExecutorGroup {
     /**
      * 返回EventExecutor的父节点，因为{@link EventExecutor} 是 {@link EventExecutorGroup}的一个内部组件。
      * (元素 与 容器的关系)
+     * 它可能为null，因为它自己也表示一个{@link EventExecutorGroup}，因此可以独立存在。
+     *
      * Return the {@link EventExecutorGroup} which is the parent of this {@link EventExecutor},
      */
     EventExecutorGroup parent();
 
     /**
-     * 一个便捷方法，查询当前线程是否是当前{@link EventExecutor}中的线程。
-     * 其实就是查询当前线程是否就是EventExecutor线程(EventExecutor概念上就是单线程的)。
+     * 一个便捷方法，查询当前线程(调用方法的线程)是否是EventLoop线程。
      *
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */
     boolean inEventLoop();
 
     /**
-     * 查询给定的线程是否是EventExecutor中的线程。
-     * (给定的线程是否运行在事件循环中。)
+     * 查询给定的线程是否是EventLoop形式的线程。
+     * 它的含义包含两层：
+     * 1.{@link EventExecutor}是否是单线程的，
+     * 2.给定的{@link Thread}是否就是{@link EventExecutor}持有的那个线程。
+     *
+     * 该方法调用必须是线程安全的，也表明了存在用于比较的Thread属性。
+     *
+     * 目的：达到数据线程封闭！
+     * 某些操作和数据只允许EventLoop线程自身操作和访问，不允许其它线程访问这些数据，否则将造成线程安全问题。
+     * 多线程的{@link EventExecutor}一定是返回false的，因为它不能提供线程封闭功能。
+     * 单线程的{@link EventExecutor}才能返回true。
      *
      * Return {@code true} if the given {@link Thread} is executed in the event loop,
      * {@code false} otherwise.
@@ -66,7 +84,10 @@ public interface EventExecutor extends EventExecutorGroup {
     boolean inEventLoop(Thread thread);
 
     /**
-     * 创建一个{@link Promise}
+     * 创建一个{@link Promise}(一个可写的Future)。
+     * 用户提交一个请求之后，返回给客户端一个Promise(请求的操作对象也会持有该promise对象)，
+     * 使得用户可以获取操作结果和添加监听器。
+     *
      * Return a new {@link Promise}.
      */
     <V> Promise<V> newPromise();

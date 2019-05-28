@@ -29,7 +29,8 @@ import java.util.concurrent.TimeUnit;
 public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     /**
-     * 与该Future关联的EventExecutor
+     * 与该Future关联的EventExecutor(用于提交通知)
+     * 如果为null，表示从别的地方获取executor
      */
     private final EventExecutor executor;
 

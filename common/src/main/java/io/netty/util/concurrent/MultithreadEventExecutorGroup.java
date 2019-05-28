@@ -111,9 +111,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
 
-        // 以下是创建EventExecutorGroup的子节点
+        // 创建指定数目的线程，(其实就是创建指定数目的EventExecutor，只不过是更高级的封装)
         children = new EventExecutor[nThreads];
-
         for (int i = 0; i < nThreads; i ++) {
             // 当前索引的child是否创建成功
             boolean success = false;
@@ -129,7 +128,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                     for (int j = 0; j < i; j ++) {
                         children[j].shutdownGracefully();
                     }
-
+                    // 等待所有创建的线程关闭
                     for (int j = 0; j < i; j ++) {
                         EventExecutor e = children[j];
                         try {
@@ -146,7 +145,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             }
         }
 
-        // 选择下一个EventExecutor的方式
+        // 到这里所有的线程创建成功。
+        // 创建EventExecutor选择器
         chooser = chooserFactory.newChooser(children);
 
         // 监听子节点关闭的Listener，可以看做回调式的CountDownLatch.
@@ -159,12 +159,12 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             }
         };
 
-        // 在所有的子节点上监听 它们的关闭事件
+        // 在所有的子节点上监听 它们的关闭事件，当所有的child关闭时，可以获得通知
         for (EventExecutor e: children) {
             e.terminationFuture().addListener(terminationListener);
         }
 
-        // 将子节点数组封装为不可变集合
+        // 将子节点数组封装为不可变集合，方便迭代(不允许外部改变持有的线程)
         Set<EventExecutor> childrenSet = new LinkedHashSet<EventExecutor>(children.length);
         Collections.addAll(childrenSet, children);
         readonlyChildren = Collections.unmodifiableSet(childrenSet);
@@ -200,14 +200,16 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * 创建一个新的EventExecutor，稍后可以被后面的{@link #next()}方法访问。
      * 将为服务于当前{@link MultithreadEventExecutorGroup}的每一个线程调用该方法。
      *
+     * 其实就是创建线程，只不过是将线程封装为{@link EventExecutor}。
+     *
      * Create a new EventExecutor which will later then accessible via the {@link #next()}  method. This method will be
      * called for each thread that will serve this {@link MultithreadEventExecutorGroup}.
-     *
      */
     protected abstract EventExecutor newChild(Executor executor, Object... args) throws Exception;
 
     @Override
     public Future<?> shutdownGracefully(long quietPeriod, long timeout, TimeUnit unit) {
+        // 它不真正的管理线程内逻辑，只是管理持有的线程的生命周期，由child自己管理自己的生命周期。
         for (EventExecutor l: children) {
             l.shutdownGracefully(quietPeriod, timeout, unit);
         }
@@ -238,11 +240,12 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     @Override
     public boolean isShuttingDown() {
         for (EventExecutor l: children) {
-            // 只要有child未进入到正在关闭状态则返回false
+            // 只要有child不处于正在关闭状态则返回false
             if (!l.isShuttingDown()) {
                 return false;
             }
         }
+        // 所有child都处理正在关闭状态
         return true;
     }
 

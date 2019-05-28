@@ -18,6 +18,7 @@ package io.netty.util.concurrent;
 /**
  * Promise模式的本质就是为Future模式提供可写功能。
  * (和FutureTask的不同在于FutureTask是内部设置结果，而Promise是外部设置结果,为外部提供接口)
+ * Promise和{@link Runnable}之间是组合关系，而FutureTask和{@link Runnable}是继承关系。
  *
  * Special {@link Future} which is writable.
  */

@@ -116,6 +116,10 @@ public abstract class AbstractEventExecutorGroup implements EventExecutorGroup {
         return next().invokeAny(tasks, timeout, unit);
     }
 
+    /**
+     * 将任务分配到某一个子节点上
+     * @param command 任务
+     */
     @Override
     public void execute(Runnable command) {
         next().execute(command);

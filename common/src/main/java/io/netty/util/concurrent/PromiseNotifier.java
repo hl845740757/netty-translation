@@ -22,6 +22,9 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
+ * Promise统治者。它持有其它的{@link Promise}，并在操作完成的时候通知其他的{@link Promise}。
+ * 当多个promise关联同一个任务的时候可能会有用。
+ *
  * {@link GenericFutureListener} implementation which takes other {@link Promise}s
  * and notifies them on completion.
  *

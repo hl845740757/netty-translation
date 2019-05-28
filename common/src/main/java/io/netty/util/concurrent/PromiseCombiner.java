@@ -43,6 +43,7 @@ public final class PromiseCombiner {
             if (executor.inEventLoop()) {
                 operationComplete0(future);
             } else {
+                // 将操作提交到EventLoop线程
                 executor.execute(new Runnable() {
                     @Override
                     public void run() {

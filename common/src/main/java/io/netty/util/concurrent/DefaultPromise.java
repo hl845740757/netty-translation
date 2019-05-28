@@ -39,14 +39,38 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<DefaultPromise, Object> RESULT_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DefaultPromise.class, Object.class, "result");
+    /**
+     * 它是一个占位符，当运行成功而没有结果时（结果为null时），赋值给{@link #result}，使用该对象表示已完成。
+     */
     private static final Object SUCCESS = new Object();
+    /**
+     * 它表示一个占位符，赋值给{@link #result}，表示当前处于不可取消状态
+     */
     private static final Object UNCANCELLABLE = new Object();
+    /**
+     * 它表示一个占位符，赋值给{@link #result}，表示已取消
+     */
     private static final CauseHolder CANCELLATION_CAUSE_HOLDER = new CauseHolder(ThrowableUtil.unknownStackTrace(
             new CancellationException(), DefaultPromise.class, "cancel(...)"));
 
+    /**
+     * 执行结果，和{@link java.util.concurrent.FutureTask}不同的是，它不是使用一个int值来表示状态并保护结果的可见性，
+     * 而是自身是volatile，将不同的实例结果赋值给result表示状态和结果。
+     */
     private volatile Object result;
+    /**
+     * 用于执行通知任务
+     */
     private final EventExecutor executor;
     /**
+     * 一个或多个监听器。可能是{@link GenericFutureListener}或者 {@link DefaultFutureListeners}。
+     * (它使用一个对象来表示一个或多个监听器)。
+     * 如果它为null，存在两种情况：
+     * 1.还没有监听器添加到该promise。
+     * 2.所有的监听器都已经被通知了。
+     *
+     * 线程安全 - 通过synchronized(this)保护。我们必须支持在没有{@link EventExecutor}时添加监听器。
+     *
      * One or more listeners. Can be a {@link GenericFutureListener} or a {@link DefaultFutureListeners}.
      * If {@code null}, it means either 1) no listeners were added yet or 2) all listeners were notified.
      *
@@ -461,6 +485,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     private void notifyListenersNow() {
+        // 通过同步块，取出当前监听器存为本地变量，标记为正在进行通知，并将监听器清除
         Object listeners;
         synchronized (this) {
             // Only proceed if there are listeners to notify and we are not already notifying listeners.
@@ -477,7 +502,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             } else {
                 notifyListener0(this, (GenericFutureListener<?>) listeners);
             }
+            // for循环里面加锁，这个操作不是很敢模仿啊
             synchronized (this) {
+                // 如果在通知完当前的监听器之后，没有新的监听器加入，那么表示通知完成，否则需要通知新加入的监听器
                 if (this.listeners == null) {
                     // Nothing can throw from within this method, so setting notifyingListeners back to false does not
                     // need to be in a finally block.
@@ -509,6 +536,10 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
     }
 
+    /**
+     * 真正添加监听器的方法，运行在锁的保护之下，以实现线程安全。
+     * @param listener
+     */
     private void addListener0(GenericFutureListener<? extends Future<? super V>> listener) {
         if (listeners == null) {
             listeners = listener;
@@ -751,14 +782,27 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
     }
 
+    /**
+     * 查询结果是否表示已经取消
+     * @param result 结果的缓存变量，将volatile变量存为本地变量，避免在查询过程中数据发生变更。
+     * @return
+     */
     private static boolean isCancelled0(Object result) {
         return result instanceof CauseHolder && ((CauseHolder) result).cause instanceof CancellationException;
     }
 
+    /**
+     * 查询结果是否表示已完成
+     * @param result 结果的缓存变量，将volatile变量存为本地变量，避免在查询过程中数据发生变更。
+     * @return true or flase
+     */
     private static boolean isDone0(Object result) {
         return result != null && result != UNCANCELLABLE;
     }
 
+    /**
+     * 内部工具类，封装异常
+     */
     private static final class CauseHolder {
         final Throwable cause;
         CauseHolder(Throwable cause) {
@@ -766,6 +810,11 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
     }
 
+    /**
+     * 安全的提交一个任务，避免提交任务打断当前运行。
+     * @param executor 执行器
+     * @param task 待提交的任务
+     */
     private static void safeExecute(EventExecutor executor, Runnable task) {
         try {
             executor.execute(task);

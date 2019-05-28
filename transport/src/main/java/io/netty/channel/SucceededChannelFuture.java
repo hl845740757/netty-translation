@@ -18,6 +18,9 @@ package io.netty.channel;
 import io.netty.util.concurrent.EventExecutor;
 
 /**
+ * 它表示{@link Channel}上关联的操作早已成功。
+ * 推荐使用{@link Channel#newSucceededFuture()}代替构造方法创建该future对象。
+ *
  * The {@link CompleteChannelFuture} which is succeeded already.  It is
  * recommended to use {@link Channel#newSucceededFuture()} instead of
  * calling the constructor of this future.
