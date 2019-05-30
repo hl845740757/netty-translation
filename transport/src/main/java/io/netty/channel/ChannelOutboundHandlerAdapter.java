@@ -18,6 +18,9 @@ package io.netty.channel;
 import java.net.SocketAddress;
 
 /**
+ * {@link ChannelOutboundHandler}的模板实现(缺省适配器)。
+ * 它的实现只是简单地通过{@link ChannelHandlerContext}转发每个方法调用。
+ *
  * Skeleton implementation of a {@link ChannelOutboundHandler}. This implementation just forwards each method call via
  * the {@link ChannelHandlerContext}.
  */

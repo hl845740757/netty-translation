@@ -46,6 +46,10 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * 它通过双向链表组织 {@link ChannelHandlerContext}，并有固定的头尾节点。
  * 头尾节点用于完成特定的工作。
  *
+ * 虽然我们在初始化{@link ChannelPipeline}的时候，使用的是{@link ChannelHandler}添加，
+ * 但是实际上会将其封装为{@link ChannelHandlerContext}，所以即使重复添加同一个{@link ChannelHandler},
+ * 在pipeline中也是不同的。
+ *
  * 入站事件流动方向： head-->tail tail进行资源释放和丢弃无用信息
  * 出站事件流动方向： tail-->head head进行真正的写数据操作，并释放资源
  *
@@ -81,10 +85,18 @@ public class DefaultChannelPipeline implements ChannelPipeline {
                     DefaultChannelPipeline.class, MessageSizeEstimator.Handle.class, "estimatorHandle");
     /**
      * HeadContext 和 TailContext最大的作用还是确保资源的释放
+     * head是入站第一个处理器，是出站的最后一个处理器。
+     * 因此在初始化pipeline时，如果都是由addLast添加，按照添加顺序执行。
      */
     final AbstractChannelHandlerContext head;
+    /**
+     * tail是入站的最后一个处理器，是出站的第一个处理器。
+     * 因此在初始化pipeline时，如果都是由addLast添加，按照添加顺序的逆序执行。
+     */
     final AbstractChannelHandlerContext tail;
-
+    /**
+     * pipeline绑定的channel，每一个channel都绑定一个pipeline，通用该pipeline也只绑定该channel。
+     */
     private final Channel channel;
     private final ChannelFuture succeededFuture;
     private final VoidChannelPromise voidPromise;

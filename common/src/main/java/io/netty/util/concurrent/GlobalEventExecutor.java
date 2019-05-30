@@ -117,7 +117,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                 }
                 return task;
             } else {
-                // 当前有等待调度的任务，不可以采用无限制的take，必须在任务下次调度前醒来
+                // 当前有等待调度的任务，不可以采用无限等待的take，必须在任务下次调度前醒来
                 long delayNanos = scheduledTask.delayNanos();
                 Runnable task;
                 if (delayNanos > 0) {

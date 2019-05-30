@@ -22,8 +22,9 @@ import java.net.ConnectException;
 import java.net.SocketAddress;
 
 /**
- * Channel出站调用者
+ * Channel出站事件调用者。
  * (出站事件传播)
+ * 也就是它调用{@link ChannelOutboundHandler}中的方法
  */
 public interface ChannelOutboundInvoker {
 

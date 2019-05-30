@@ -16,7 +16,8 @@
 package io.netty.channel;
 
 /**
- * Channel入站事件调用者
+ * Channel入站事件调用者，它们调用channel的入站事件方法。
+ * 即调用{@link ChannelInboundHandler}中的方法。
  * (入站事件传递)
  *
  * // {@link Channel}的{@link ChannelPipeline}包含的下一个{@link ChannelInboundHandler}

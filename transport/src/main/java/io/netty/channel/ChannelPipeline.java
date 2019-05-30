@@ -29,7 +29,9 @@ import java.util.NoSuchElementException;
 
 
 /**
- * ChannelPipeline 是一个 {@link ChannelHandler}s的列表(list).(它暗示了ChannelHandler之间是有序的)
+ * ChannelPipeline 是一个 {@link ChannelHandler}s的列表(list).
+ * (它暗示了ChannelHandler之间是有序的，且实际上pipeline中是ChannelHandlerContext的链表，
+ * 即使是相同的channel，也会是不同的ChannelHandlerContext)
  * 这些{@link ChannelHandler}负责 处理或拦截 {@link Channel} 上的 入站事件 和 出站操作。
  * ChannelPipeline是 拦截过滤器模式 的高级实现形式。
  * 它允许用户完全的控制 如何处理一个事件 和 pipeline中的channelHandler之间如何相互交互。

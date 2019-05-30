@@ -21,12 +21,14 @@ import io.netty.util.IntSupplier;
  * Default select strategy.
  */
 final class DefaultSelectStrategy implements SelectStrategy {
+
     static final SelectStrategy INSTANCE = new DefaultSelectStrategy();
 
     private DefaultSelectStrategy() { }
 
     @Override
     public int calculateStrategy(IntSupplier selectSupplier, boolean hasTasks) throws Exception {
+        // 如果有任务，使用指定的select策略，否则进行阻塞式select调用
         return hasTasks ? selectSupplier.get() : SelectStrategy.SELECT;
     }
 }

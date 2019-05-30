@@ -49,6 +49,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * 它将{@link Channel}注册到{@link Selector}，事件循环中的这些实现了多路复用。
+ * （主要知识点：NIO-Selector模型）
+ *
  * {@link SingleThreadEventLoop} implementation which register the {@link Channel}'s to a
  * {@link Selector} and so does the multi-plexing of these in the event loop.
  *
@@ -63,6 +66,9 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             SystemPropertyUtil.getBoolean("io.netty.noKeySetOptimization", false);
 
     private static final int MIN_PREMATURE_SELECTOR_RETURNS = 3;
+    /**
+     *
+     */
     private static final int SELECTOR_AUTO_REBUILD_THRESHOLD;
 
     private final IntSupplier selectNowSupplier = new IntSupplier() {
@@ -109,6 +115,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     /**
      * The NIO {@link Selector}.
+     * 每一个线程(EventLoop)一个Selector。
      */
     private Selector selector;
     private Selector unwrappedSelector;
@@ -168,7 +175,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         } catch (IOException e) {
             throw new ChannelException("failed to open a new selector", e);
         }
-
+        // 如果禁用了key集合优化，则直接返回
         if (DISABLE_KEY_SET_OPTIMIZATION) {
             return new SelectorTuple(unwrappedSelector);
         }
@@ -340,11 +347,14 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     /**
+     * 创建一个新的{@link Selector}替换当前的{@link Selector} 以解决臭名昭着的epoll 100%CPU的bug。
+     *
      * Replaces the current {@link Selector} of this event loop with newly created {@link Selector}s to work
      * around the infamous epoll 100% CPU bug.
      */
     public void rebuildSelector() {
         if (!inEventLoop()) {
+            // 如果是另一个线程调用，则提交一个任务到目标线程，以达到线程封闭实现线程安全。
             execute(new Runnable() {
                 @Override
                 public void run() {
@@ -353,6 +363,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             });
             return;
         }
+        // 当前EventLoop所在的线程调用重建selector方法
         rebuildSelector0();
     }
 
@@ -370,7 +381,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
             logger.warn("Failed to create a new Selector.", e);
             return;
         }
-
+        // 将旧的selector上的所有key注册到新的selector上。
         // Register all channels to the new Selector.
         int nChannels = 0;
         for (SelectionKey key: oldSelector.keys()) {
@@ -839,6 +850,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * 重新构建
+     * @param selectCnt
+     * @return
+     * @throws IOException
+     */
     private Selector selectRebuildSelector(int selectCnt) throws IOException {
         // The selector returned prematurely many times in a row.
         // Rebuild the selector to work around the problem.

@@ -17,7 +17,8 @@ package io.netty.channel;
 
 /**
  * {@link ChannelInboundHandler}的缺省实现。(默认实现)
- * 它是一个简单的缺省适配器类。 属于类适配器。
+ * 它是一个简单的缺省适配器，只是简单的将事件数据和事件传递给pipeline中的下一个handler。
+ * 属于类适配器。
  *
  * Abstract base class for {@link ChannelInboundHandler} implementations which provide
  * implementations of all of their methods.

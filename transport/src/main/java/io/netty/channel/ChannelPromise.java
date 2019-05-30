@@ -20,6 +20,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 
 /**
+ * 特殊的可写的{@link ChannelFuture}。
+ *
  * Special {@link ChannelFuture} which is writable.
  */
 public interface ChannelPromise extends ChannelFuture, Promise<Void> {
@@ -62,6 +64,8 @@ public interface ChannelPromise extends ChannelFuture, Promise<Void> {
     ChannelPromise awaitUninterruptibly();
 
     /**
+     * 如果{@link #isVoid()}返回true，则返回一个新的{@link ChannelPromise}，否则返回自己。
+     * 
      * Returns a new {@link ChannelPromise} if {@link #isVoid()} returns {@code true} otherwise itself.
      */
     ChannelPromise unvoid();

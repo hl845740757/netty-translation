@@ -59,6 +59,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>
  * 注意:该类被标记为 {@link Sharable}(可共享的)，也就是说它的实现必须是线程安全的以便重用。
+ * 建议子类实现的时候都是new对象，确定不存在线程安全问题的对象可以复用。
  * </p>
  * Be aware that this class is marked as {@link Sharable} and so the implementation must be safe to be re-used.
  *

@@ -41,7 +41,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractChannelHandlerContext.class);
     /**
      * 下一个handler的缓存。
-     * 缓存还不一定增加了性能，而且复杂度高了好多，总得维护
+     * 缓存还不一定增加了性能，而且复杂度高了好多，总得维护。
      */
     volatile AbstractChannelHandlerContext next;
     /**
@@ -53,18 +53,29 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
             AtomicIntegerFieldUpdater.newUpdater(AbstractChannelHandlerContext.class, "handlerState");
 
     /**
+     * 即将调用{@link ChannelHandler#handlerAdded(ChannelHandlerContext)}时。（还未添加到pipeline中时）
+     * （四个值表示ChannelHandlerContext的生命周期）
+     *
      * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} is about to be called.
      */
     private static final int ADD_PENDING = 1;
     /**
+     * 已调用{@link ChannelHandler#handlerAdded(ChannelHandlerContext)}。（成功添加到pipeline中时）
+     *
      * {@link ChannelHandler#handlerAdded(ChannelHandlerContext)} was called.
      */
     private static final int ADD_COMPLETE = 2;
     /**
+     * 已调用{@link ChannelHandler#handlerRemoved(ChannelHandlerContext)}。（已从pipeline中删除）
+     *
      * {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
      */
     private static final int REMOVE_COMPLETE = 3;
+
     /**
+     * 初始状态，既未调用{@link ChannelHandler#handlerAdded(ChannelHandlerContext)}，也未调用
+     * {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)}。
+     *
      * Neither {@link ChannelHandler#handlerAdded(ChannelHandlerContext)}
      * nor {@link ChannelHandler#handlerRemoved(ChannelHandlerContext)} was called.
      */
@@ -92,6 +103,9 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     // Will be set to null if no child executor should be used, otherwise it will be set to the
     // child executor.
+    /**
+     * 如果不应该使用任何executor，应该设置为null，否则应该设置为具体的executor。
+     */
     final EventExecutor executor;
     /**
      * 已操作成功的future缓存
@@ -876,6 +890,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     @Override
     public ChannelFuture newSucceededFuture() {
+        // succeededFuture 由于没有额外属性，因此可以缓存
         ChannelFuture succeededFuture = this.succeededFuture;
         if (succeededFuture == null) {
             this.succeededFuture = succeededFuture = new SucceededChannelFuture(channel(), executor());
@@ -885,6 +900,7 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     @Override
     public ChannelFuture newFailedFuture(Throwable cause) {
+        // failFuture由于cause可能不同，因此不能缓存
         return new FailedChannelFuture(channel(), executor(), cause);
     }
 

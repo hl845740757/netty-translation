@@ -53,8 +53,11 @@ public class DefaultEventLoop extends SingleThreadEventLoop {
     @Override
     protected void run() {
         for (;;) {
+            // 简单的拉取任务执行
             Runnable task = takeTask();
             if (task != null) {
+                // 这里一旦抛出异常就意味着退出线程
+                // 这里没有使用 safeExecute
                 task.run();
                 updateLastExecutionTime();
             }

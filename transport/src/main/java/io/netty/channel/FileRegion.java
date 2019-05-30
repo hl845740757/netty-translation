@@ -22,6 +22,15 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 
 /**
+ * 通过channel发送的，支持零拷贝文件传输的 文件区域（内存文件映射）。
+ * <h3>升级你的JDK</h3>
+ * 在旧版本的Sun JDK和它的派生版本中至少有四个已知的错误；
+ * 如果你想要使用零拷贝的文件传输，请升级到1.6.0_18或更新的版本。
+ * <h3>检查你的操作系统和jdk</h3>
+ * 如果你的操作系统和文件传输并不支持零拷贝的文件传输，使用{@link FileRegion}发送文件可能
+ * 会失败或产出更糟糕的性能。例如，在Windows操作系统下发送一个发文件并不能工作的很好。
+ * <h3>并不是所有的传输都支持(零拷贝)</h3>
+ *
  * A region of a file that is sent via a {@link Channel} which supports
  * <a href="http://en.wikipedia.org/wiki/Zero-copy">zero-copy file transfer</a>.
  *

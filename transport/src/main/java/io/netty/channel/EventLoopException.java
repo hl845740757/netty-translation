@@ -16,6 +16,8 @@
 package io.netty.channel;
 
 /**
+ * 当{@link EventLoop}和{@link EventLoopGroup}出现错误的时候会抛出该异常。
+ *
  * Special {@link ChannelException} which will be thrown by {@link EventLoop} and {@link EventLoopGroup}
  * implementations when an error occurs.
  */

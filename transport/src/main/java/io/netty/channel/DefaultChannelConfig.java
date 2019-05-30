@@ -55,6 +55,8 @@ public class DefaultChannelConfig implements ChannelConfig {
 
     protected final Channel channel;
 
+    // 都是volatile 是因为它们都是独立的，不与其它属性共同构成约束条件，新值与旧值也无关
+
     private volatile ByteBufAllocator allocator = ByteBufAllocator.DEFAULT;
     private volatile RecvByteBufAllocator rcvBufAllocator;
     private volatile MessageSizeEstimator msgSizeEstimator = DEFAULT_MSG_SIZE_ESTIMATOR;

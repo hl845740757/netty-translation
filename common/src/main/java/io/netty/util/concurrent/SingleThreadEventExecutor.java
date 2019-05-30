@@ -23,22 +23,8 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.lang.Thread.State;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -147,11 +133,13 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     private final Set<Runnable> shutdownHooks = new LinkedHashSet<Runnable>();
     /**
-     *
+     * 当且仅当{@link #addTask(Runnable)}能唤醒executor线程的时候，为true。
      */
     private final boolean addTaskWakesUp;
     /**
-     * 最大填充任务数
+     * 最大填充任务数。
+     * 当任务数超过该数量是则会阻塞。
+     * {@link #newTaskQueue(int)}
      */
     private final int maxPendingTasks;
     /**
@@ -229,7 +217,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                                         RejectedExecutionHandler rejectedHandler) {
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
-        // 最左只允许16个任务
+        // 最多只允许16个任务
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
         taskQueue = newTaskQueue(this.maxPendingTasks);
@@ -246,6 +234,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * 这是一个工厂方法，子类可以覆盖它以创建不同类型的队列。
+     * 有界队列，任务到达上限时会阻塞。
+     *
      * Create a new {@link Queue} which will holds the tasks to execute. This default implementation will return a
      * {@link LinkedBlockingQueue} but if your sub-class of {@link SingleThreadEventExecutor} will not do any blocking
      * calls on the this {@link Queue} it may make sense to {@code @Override} this and return some more performant
@@ -279,6 +269,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return pollTaskFrom(taskQueue);
     }
 
+    /**
+     * 从指定任务队列中弹出一个有效任务
+     * @param taskQueue 任务队列
+     * @return nullable 如果不存在则返回null
+     */
     protected static Runnable pollTaskFrom(Queue<Runnable> taskQueue) {
         for (;;) {
             Runnable task = taskQueue.poll();
@@ -293,6 +288,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * 从任务队列中取出下一个执行的{@link Runnable}，并且如果当前没有任务存在的话则会阻塞。
      * 注意：如果{@link #newTaskQueue()}返回的对象没有实现{@link BlockingQueue}则会抛出一个
      * {@link UnsupportedOperationException}异常。
+     *
+     * 和{@code GlobalEventExecutor#taskTask}是一样的逻辑，注意那边的注释。
      * <p>
      *
      * Take the next {@link Runnable} from the task queue and so will block if no task is currently present.
@@ -310,13 +307,13 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (!(taskQueue instanceof BlockingQueue)) {
             throw new UnsupportedOperationException();
         }
-
+        // taskQueue包含当前可执行的所有任务，包括周期性调度的任务和execute提交的任务。
         BlockingQueue<Runnable> taskQueue = (BlockingQueue<Runnable>) this.taskQueue;
         for (;;) {
-            // 先尝试取出一个可调度的任务
+            // 查看是否有待执行的周期性调度的任务，如果有的话，不可以无限制的在taskQueue上等待
             ScheduledFutureTask<?> scheduledTask = peekScheduledTask();
             if (scheduledTask == null) {
-                // 如果当前没有可调度的任务，则查看任务队列
+                // 当前无等待调度的任务，因此可以采用take，阻塞直到taskQueue中提交新任务。
                 Runnable task = null;
                 try {
                     task = taskQueue.take();
@@ -328,6 +325,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 }
                 return task;
             } else {
+                // 当前有等待调度的任务，不可以采用无限等待的take，必须在任务下次调度前醒来
                 long delayNanos = scheduledTask.delayNanos();
                 Runnable task = null;
                 if (delayNanos > 0) {
@@ -338,6 +336,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                         return null;
                     }
                 }
+                // 难怪没有重复代码提示，这里的else去掉了
+
+                // 如果taskQueue不包含可执行的任务，那么就会从scheduledTaskQueue中拉取可能执行的任务到taskQueue
+                // fetchFromScheduledTaskQueue 这个方法很重要
                 if (task == null) {
                     // We need to fetch the scheduled tasks now as otherwise there may be a chance that
                     // scheduled tasks are never executed if there is always one task in the taskQueue.
@@ -354,6 +356,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    /**
+     * 拉取可以执行的周期性调度任务到taskQueue，这样taskQueue中就包含了所有可执行的任务，
+     * @return
+     */
     private boolean fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
         Runnable scheduledTask  = pollScheduledTask(nanoTime);
@@ -430,6 +436,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 弹出所有的任务并执行(调用他们的run方法)
+     *
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.
      *
      * @return {@code true} if and only if at least one task was run
@@ -574,8 +582,13 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return thread == this.thread;
     }
 
+    /**
+     * 唤醒线程，线程当前可能阻塞在等待任务的过程中(take)
+     * @param inEventLoop 当前是否是EventLoop线程
+     */
     protected void wakeup(boolean inEventLoop) {
         if (!inEventLoop || state == ST_SHUTTING_DOWN) {
+            // 使用offer，因为我们只是需要唤醒线程，并且offer失败也没有影响。
             // Use offer as we actually only need this to unblock the thread and if offer fails we do not care as there
             // is already something in the queue.
             taskQueue.offer(WAKEUP_TASK);
@@ -866,7 +879,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 }
             }
         }
-        // ?
+        // 如果 addTask(task) 不能自动唤醒线程 而提交的任务可以唤醒线程时，唤醒线程
         if (!addTaskWakesUp && wakesUpForTask(task)) {
             wakeup(inEventLoop);
         }
@@ -930,6 +943,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         return threadProperties;
     }
 
+    /**
+     * 任务是否唤醒线程
+     * @param task 新任务
+     * @return true/false 如果可以唤醒线程则返回true，如果不可以唤醒线程则返回false
+     */
     @SuppressWarnings("unused")
     protected boolean wakesUpForTask(Runnable task) {
         return true;

@@ -24,6 +24,9 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
+ * 用于动态编码/解码字节到消息的编解码器，反之亦然。
+ * 可以认为是{@link ByteToMessageDecoder}和{@link MessageToByteEncoder}的合并。
+ *
  * A Codec for on-the-fly encoding/decoding of bytes to messages and vise-versa.
  *
  * This can be thought of as a combination of {@link ByteToMessageDecoder} and {@link MessageToByteEncoder}.
@@ -33,9 +36,18 @@ import java.util.List;
  */
 public abstract class ByteToMessageCodec<I> extends ChannelDuplexHandler {
 
+    /**
+     * 类型匹配器{@link TypeParameterMatcher}是非常重要的一个类。
+     */
     private final TypeParameterMatcher outboundMsgMatcher;
-    private final MessageToByteEncoder<I> encoder;
 
+    /**
+     * 辅助编码器
+     */
+    private final MessageToByteEncoder<I> encoder;
+    /**
+     * 辅助解码器
+     */
     private final ByteToMessageDecoder decoder = new ByteToMessageDecoder() {
         @Override
         public void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {

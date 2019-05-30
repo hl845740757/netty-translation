@@ -19,6 +19,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
+ * {@link DefaultEventLoop}的容器。
+ *
  * {@link MultithreadEventLoopGroup} which must be used for the local transport.
  */
 public class DefaultEventLoopGroup extends MultithreadEventLoopGroup {

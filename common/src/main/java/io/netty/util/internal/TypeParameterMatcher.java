@@ -110,7 +110,7 @@ public abstract class TypeParameterMatcher {
         final Class<?> thisClass = object.getClass();
         Class<?> currentClass = thisClass;
         for (;;) {
-            // 找到了目标类(因为需要GenericSuperClass才能获取泛型的信息，因此需要递归寻找)
+            // 1.找到了目标类(因为需要GenericSuperClass才能获取泛型的信息，因此需要递归寻找)
             if (currentClass.getSuperclass() == parametrizedSuperclass) {
                 // 泛型参数在类中的索引
                 int typeParamIndex = -1;
@@ -121,7 +121,7 @@ public abstract class TypeParameterMatcher {
                         break;
                     }
                 }
-                // 该泛型参数在类中不存在
+                // 2.该泛型参数在类中不存在
                 if (typeParamIndex < 0) {
                     throw new IllegalStateException(
                             "unknown type parameter '" + typeParamName + "': " + parametrizedSuperclass);
@@ -133,7 +133,7 @@ public abstract class TypeParameterMatcher {
 
                 // Type顶层接口，有四种类型。Class,GenericArrayType,TypeVariable,WildcardType
                 // 其中只有ParameterizedType可以获取真实泛型参数类型。
-                // 如果不是ParameterizedType类型，通常表示着当前子类继承父类时抹去了父类的泛型。
+                // 3.如果不是ParameterizedType类型，通常表示着当前子类继承父类时抹去了父类的泛型。
                 if (!(genericSuperType instanceof ParameterizedType)) {
                     return Object.class;
                 }
@@ -142,16 +142,16 @@ public abstract class TypeParameterMatcher {
                 // 获取对应索引的真实类型
                 Type actualTypeParam = actualTypeParams[typeParamIndex];
                 if (actualTypeParam instanceof ParameterizedType) {
-                    // 仍然是个泛型类型，则获取其原始类型
+                    // 4.仍然是个泛型类型，则获取其原始类型
                     actualTypeParam = ((ParameterizedType) actualTypeParam).getRawType();
                 }
 
-                // 返回点：如果真实类型是class，表示已找到，或真实类型是泛型类型，返回它的原始类型。
+                // 5.返回点：如果真实类型是class，表示已找到，或真实类型是泛型类型，返回它的原始类型。
                 if (actualTypeParam instanceof Class) {
                     return (Class<?>) actualTypeParam;
                 }
 
-                // 返回点：如果真实类型泛型数组，则获取数组元素的真实类型，并创建它的一个数组返回
+                // 6.返回点：如果真实类型泛型数组，则获取数组元素的真实类型，并创建它的一个数组返回
                 if (actualTypeParam instanceof GenericArrayType) {
                     Type componentType = ((GenericArrayType) actualTypeParam).getGenericComponentType();
                     if (componentType instanceof ParameterizedType) {
@@ -162,24 +162,25 @@ public abstract class TypeParameterMatcher {
                     }
                 }
 
-                // 如果真实类型是一个泛型变量，它通常意味着，当前子类在继承时使用了新的泛型参数(不论名字是否相同),会导致这里是泛型变量。
-                // eg:  class B<E>{}  class A<E> extend B<E>{}
+                // 7.如果真实类型是一个泛型变量，它通常意味着，当前子类在继承时使用了新的泛型参数(不论名字是否相同),会导致这里是泛型变量。
+                // eg:  class A<E>{}  class B<E> extend A<E>{}
                 if (actualTypeParam instanceof TypeVariable) {
                     // Resolved type parameter points to another type parameter.
                     TypeVariable<?> v = (TypeVariable<?>) actualTypeParam;
                     currentClass = thisClass;
+                    // 8.如果声明新泛型变量的不是Class类型(类/接口)，则无法查找，返回Object.class
                     if (!(v.getGenericDeclaration() instanceof Class)) {
                         return Object.class;
                     }
-                    // 重新声明该泛型的是一个类，名字可能改变了
+                    // 9.另一个Class类型重新声明了该泛型参数，要查找的超类和泛型变量名都需要纠正。
                     parametrizedSuperclass = (Class<?>) v.getGenericDeclaration();
                     typeParamName = v.getName();
 
                     if (parametrizedSuperclass.isAssignableFrom(thisClass)) {
-                        // 重新声明该泛型的类仍然是传入类的超类，则重新查找(查找被重新定义的泛型参数的真实类型)。！！！
+                        // 10.重新声明该泛型的类仍然是传入类的超类，则重新查找(查找被重新定义的泛型参数的真实类型)。！！！
                         continue;
                     } else {
-                        // 返回点：声明该泛型参数的不是它的超类，则返回object
+                        // 11.返回点：声明该泛型参数的不是它的超类，无法继续查找，则返回object
                         return Object.class;
                     }
                 }

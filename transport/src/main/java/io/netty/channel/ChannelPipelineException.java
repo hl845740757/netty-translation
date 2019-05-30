@@ -16,6 +16,8 @@
 package io.netty.channel;
 
 /**
+ * 当{@link ChannelPipeline}执行操作失败时抛出该异常。
+ *
  * A {@link ChannelException} which is thrown when a {@link ChannelPipeline}
  * failed to execute an operation.
  */

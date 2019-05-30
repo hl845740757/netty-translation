@@ -29,6 +29,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * 继承{@link SingleThreadEventExecutor}并实现{@link EventLoop}，结合二者的概念。
  * 实现上将特定方法的返回值定义为更具体的类型。(EventLoop)
+ * EventLoop本就应该是单线程的。
  *
  * 它是EventLoop所有实现类的超类。它是{@link MultithreadEventLoopGroup}的子节点。
  *
@@ -100,6 +101,7 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
     }
 
     /**
+     * 在当前事件循环结束之后执行
      * Adds a task to be run once at the end of next (or current) {@code eventloop} iteration.
      *
      * @param task to be added.

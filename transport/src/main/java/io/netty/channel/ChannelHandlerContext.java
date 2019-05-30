@@ -269,9 +269,22 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
     ByteBufAllocator alloc();
 
     /**
-     * 不再被使用，请使用{@link Channel#attr(AttributeKey)}。
-     * 个人觉得其原因就是因为容易导致误用，更普遍的运用的应该是在channel上传递/存储数据，所以建议直接使用
-     * channel上的方法。
+     * 不再被使用，请使用{@link Channel#attr(AttributeKey)}代替。
+     *
+     * 禁用理由：
+     * Channel和ChannelHandlerContext都实现了接口AttributeMap，
+     * 使用户能够将一个或多个用户定义的属性附加到它们。
+     * 有时让用户感到困惑的是Channel和ChannelHandlerContext都有自己的用户定义属性存储。
+     * 例如，即使您通过Channel.attr(KEY_X).set(valueX)放置属性“KEY_X”，
+     * 但你也永远不能通过ChannelHandlerContext.attr(KEY_X).get( )得到它，反之亦然。
+     * 这种行为不仅令人困惑，而且浪费内存。
+     *
+     * 为了解决这个问题，我们决定在内部每个Channel只保留一个Map。
+     * AttributeMap始终使用AttributeKey作为其键。
+     * AttributeKey确保每个键之间的唯一性，因此每个通道不能有多个属性映射。
+     * 只要用户将自己的AttributeKey定义为其ChannelHandler的私有静态最终字段，就不会有重复键的风险。
+     *
+     * - https://netty.io/wiki/new-and-noteworthy-in-4.1.html
      *
      * @deprecated Use {@link Channel#attr(AttributeKey)}
      */
@@ -280,6 +293,9 @@ public interface ChannelHandlerContext extends AttributeMap, ChannelInboundInvok
     <T> Attribute<T> attr(AttributeKey<T> key);
 
     /**
+     * 同样的禁用理由：
+     * - https://netty.io/wiki/new-and-noteworthy-in-4.1.html
+     *
      * @deprecated Use {@link Channel#hasAttr(AttributeKey)}
      */
     @Deprecated

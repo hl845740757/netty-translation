@@ -55,7 +55,8 @@ public abstract class AbstractNioChannel extends AbstractChannel {
             new ClosedChannelException(), AbstractNioChannel.class, "doClose()");
 
     /**
-     * JDK的channel，实际上是代理。 Netty中有许多代理实现
+     * Netty的NioChannel实际上是代理JDK的Channel。
+     * Netty中有许多代理模式的运用。(或者说装饰吧)
      */
     private final SelectableChannel ch;
     /**

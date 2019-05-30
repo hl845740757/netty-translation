@@ -125,6 +125,7 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
                 I imsg = (I) msg;
                 channelRead0(ctx, imsg);
             } else {
+                // 数据不能被处理，传递给下一个handler(context)
                 release = false;
                 ctx.fireChannelRead(msg);
             }
@@ -137,6 +138,9 @@ public abstract class SimpleChannelInboundHandler<I> extends ChannelInboundHandl
     }
 
     /**
+     * 真正执行读操作的地方。
+     * （当上一个handler发布的数据是我期待的数据类型的时候）
+     *
      * <strong>Please keep in mind that this method will be renamed to
      * {@code messageReceived(ChannelHandlerContext, I)} in 5.0.</strong>
      *

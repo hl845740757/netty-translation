@@ -18,6 +18,12 @@ package io.netty.channel;
 import java.net.SocketAddress;
 
 /**
+ * 双工Handler，既处理入站操作也处理出站操作，个人觉得最明显的应用就是 XXXCodecHandler。
+ * 它是一个适配器，默认实现为将操作和事件简单地传递给下一个handler。
+ *
+ * {@link ChannelDuplexHandler}表示{@link ChannelInboundHandler}和{@link ChannelOutboundHandler}的一种结合。
+ * 如果你的{@link ChannelHandler}实现需要拦截操作或进行状态更新，那么这是一个很好的起点。
+ *
  * {@link ChannelHandler} implementation which represents a combination out of a {@link ChannelInboundHandler} and
  * the {@link ChannelOutboundHandler}.
  *

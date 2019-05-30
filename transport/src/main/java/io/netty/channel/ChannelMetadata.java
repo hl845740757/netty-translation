@@ -61,6 +61,9 @@ public final class ChannelMetadata {
     }
 
     /**
+     * 当且仅当Channel具有允许用户断开连接然后再次调用{@link Channel#connect(SocketAddress)}
+     * 的{@code disconnect( )}操作时，返回{@code true}，例如UDP / IP。
+     *
      * Returns {@code true} if and only if the channel has the {@code disconnect()} operation
      * that allows a user to disconnect and then call {@link Channel#connect(SocketAddress)} again,
      * such as UDP/IP.

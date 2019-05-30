@@ -18,6 +18,11 @@ package io.netty.channel;
 import io.netty.util.IntSupplier;
 
 /**
+ * 选择策略接口。
+ * 用于指示EventLoop下一步该干什么。
+ *
+ * 提供控制select loop行为的功能。 例如，如果有事件要立即处理，则可以延迟或完全跳过阻塞选择操作
+ *
  * Select strategy interface.
  *
  * Provides the ability to control the behavior of the select loop. For example a blocking select
@@ -39,6 +44,9 @@ public interface SelectStrategy {
     int BUSY_WAIT = -3;
 
     /**
+     * 计算选择策略。
+     * {@link SelectStrategy}可用于指导潜在选择调用的结果。
+     *
      * The {@link SelectStrategy} can be used to steer the outcome of a potential select
      * call.
      *
