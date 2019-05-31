@@ -80,7 +80,7 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * 为将要创建的Channel绑定{@link EventLoopGroup},该EventLoopGroup会出来该Channel的所有IO事件。
+     * 为将要创建的Channel绑定{@link EventLoopGroup},该EventLoopGroup会处理该Channel接下来的所有IO事件。
      *
      * The {@link EventLoopGroup} which is used to handle all the events for the to-be-created
      * {@link Channel}
@@ -97,7 +97,8 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     * 通过泛型的方式转换为具体的子类型
+     * 通过泛型的方式转换为具体的子类型。
+     * 这是个很好的方式，我有用过，在Builder模式上用着很爽。
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -316,31 +317,37 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     private ChannelFuture doBind(final SocketAddress localAddress) {
         final ChannelFuture regFuture = initAndRegister();
         final Channel channel = regFuture.channel();
-        // 注册失败
+        // 注册到EventLoop失败
         if (regFuture.cause() != null) {
             return regFuture;
         }
         if (regFuture.isDone()) {
+            // 注册完成，但不一定成功了，尝试进行绑定
             // At this point we know that the registration was complete and successful.
             ChannelPromise promise = channel.newPromise();
             doBind0(regFuture, channel, localAddress, promise);
             return promise;
         } else {
+            // 由于注册操作还未完成，因此需要注册一个观察者，等待操作完成的时候，执行绑定操作
             // Registration future is almost always fulfilled already, but just in case it's not.
             final PendingRegistrationPromise promise = new PendingRegistrationPromise(channel);
             regFuture.addListener(new ChannelFutureListener() {
+
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
+                    // 注册操作已完成
                     Throwable cause = future.cause();
+                    // 又回到上面的逻辑，注册失败
                     if (cause != null) {
                         // Registration on the EventLoop failed so fail the ChannelPromise directly to not cause an
                         // IllegalStateException once we try to access the EventLoop of the Channel.
                         promise.setFailure(cause);
                     } else {
+                        // 注册完成，但不一定成功了，尝试进行绑定
                         // Registration was successful, so set the correct executor to use.
                         // See https://github.com/netty/netty/issues/2586
                         promise.registered();
-
+                        // 这里是另一个线程执行的回调
                         doBind0(regFuture, channel, localAddress, promise);
                     }
                 }
@@ -350,8 +357,6 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
     }
 
     /**
-     *
-     *
      * 这里调用{@link #init(Channel)}的方式就是模板方法
      * @return
      */
@@ -375,10 +380,10 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
             return new DefaultChannelPromise(new FailedChannel(), GlobalEventExecutor.INSTANCE).setFailure(t);
         }
 
-        // 这里尝试将该Bootstrap管理的channel注册到它的group上。
+        // 这里尝试将该Bootstrap管理的channel注册到它的group上，这是一个异步方法
         ChannelFuture regFuture = config().group().register(channel);
 
-        // 这里并没有进行任何的等待
+        // 这里并没有进行任何的等待，先检查了一次是否已经失败
         if (regFuture.cause() != null) {
             // 产生了异常
             if (channel.isRegistered()) {
@@ -416,18 +421,38 @@ public abstract class AbstractBootstrap<B extends AbstractBootstrap<B, C>, C ext
      */
     abstract void init(Channel channel) throws Exception;
 
+    /**
+     * 这里需要注意的是，因为不一定是当前线程执行；
+     * 可能是回调线程执行，因此又线程安全的考虑；
+     * 在netty中，很多方法实现为静态方法，就是为了线程安全，所有需要的值都传入，
+     * 这样的方法是函数式的方法。
+     * @param regFuture register操作关联的future
+     * @param channel channel
+     * @param localAddress 绑定的地址
+     * @param promise bind操作关联的promise（future）
+     */
     private static void doBind0(
             final ChannelFuture regFuture, final Channel channel,
             final SocketAddress localAddress, final ChannelPromise promise) {
 
         // This method is invoked before channelRegistered() is triggered.  Give user handlers a chance to set up
         // the pipeline in its channelRegistered() implementation.
+
+        // bind()方法或connect()是安全的，注意 initAndRegister方法的注释
+        // 2.如果我们尝试的注册操作是异步的，由其它线程执行的，那么请求的注册操作已经成功的添加到了EventLoop 任务队列中，
+        // 等待接下来的执行。那么：现在尝试调用bind()或connect()方法是安全的，因为：
+        // bind()方法或connect()方法将会在注册请求(任务)之后被调度执行，因为register(), bind(), and connect()都绑定在
+        // 同一个线程上。(EventLoop是顺序执行提交的任务的，是单线程的)
+
+        // 提交任务到目标EventLoop 以保证线程安全
         channel.eventLoop().execute(new Runnable() {
             @Override
             public void run() {
                 if (regFuture.isSuccess()) {
+                    // 注册成功
                     channel.bind(localAddress, promise).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
                 } else {
+                    // 注册失败
                     promise.setFailure(regFuture.cause());
                 }
             }

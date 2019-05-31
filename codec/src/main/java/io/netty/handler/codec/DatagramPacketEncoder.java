@@ -30,6 +30,8 @@ import java.net.SocketAddress;
 import java.util.List;
 
 /**
+ * 数据报编码器。
+ *
  * An encoder that encodes the content in {@link AddressedEnvelope} to {@link DatagramPacket} using
  * the specified message encoder. E.g.,
  *
@@ -73,14 +75,16 @@ public class DatagramPacketEncoder<M> extends MessageToMessageEncoder<AddressedE
     protected void encode(
             ChannelHandlerContext ctx, AddressedEnvelope<M, InetSocketAddress> msg, List<Object> out) throws Exception {
         assert out.isEmpty();
-
+        // 编码业务逻辑消息
         encoder.encode(ctx, msg.content(), out);
+        // 数据报只支持传输一个ByteBuf对象
         if (out.size() != 1) {
             throw new EncoderException(
                     StringUtil.simpleClassName(encoder) + " must produce only one message.");
         }
         Object content = out.get(0);
         if (content instanceof ByteBuf) {
+            // 将第一个位置的编码结果替换为数据报对象
             // Replace the ByteBuf with a DatagramPacket.
             out.set(0, new DatagramPacket((ByteBuf) content, msg.recipient(), msg.sender()));
         } else {

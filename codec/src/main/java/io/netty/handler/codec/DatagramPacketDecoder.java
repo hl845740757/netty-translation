@@ -25,6 +25,8 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import java.util.List;
 
 /**
+ * 数据报解码器。
+ *
  * A decoder that decodes the content of the received {@link DatagramPacket} using
  * the specified {@link ByteBuf} decoder. E.g.,
  *

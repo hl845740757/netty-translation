@@ -29,6 +29,8 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
+ * {@link MessageToMessageEncoder}将一个消息编码为另一个消息，该类属于较为顶层的抽象类；
+ *
  * {@link ChannelOutboundHandlerAdapter} which encodes from one message to an other message
  *
  * For example here is an implementation which decodes an {@link Integer} to an {@link String}.
@@ -82,12 +84,16 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
         CodecOutputList out = null;
         try {
             if (acceptOutboundMessage(msg)) {
+                // 是可以处理的对象
                 out = CodecOutputList.newInstance();
                 @SuppressWarnings("unchecked")
                 I cast = (I) msg;
                 try {
                     encode(ctx, cast, out);
                 } finally {
+                    // 相同的坑，在编码之后，会强制对编码的对象执行释放操作，
+                    // 而又没有SimpleChannelInboundHandler那样的autoRelease属性，
+                    // 注意自己的编码器是否需要增加引用计数
                     ReferenceCountUtil.release(cast);
                 }
 
@@ -145,6 +151,7 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
      *
      * @param ctx           the {@link ChannelHandlerContext} which this {@link MessageToMessageEncoder} belongs to
      * @param msg           the message to encode to an other one
+     *                      同样的警告：该对象在方法返回之后，会调用{@link ReferenceCountUtil#refCnt(Object)}进行释放。
      * @param out           the {@link List} into which the encoded msg should be added
      *                      needs to do some kind of aggregation
      * @throws Exception    is thrown if an error occurs

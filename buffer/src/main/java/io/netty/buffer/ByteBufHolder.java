@@ -18,6 +18,10 @@ package io.netty.buffer;
 import io.netty.util.ReferenceCounted;
 
 /**
+ * 一个用于收发数据的包装对象。
+ * 它持有一个ByteBuf对象，它本身不是引用计数的，它持有的ByteBuf才是引用计数的。
+ * 使用{@link #content()}一定要小心引用计数问题。
+ *
  * A packet which is send or receive.
  */
 public interface ByteBufHolder extends ReferenceCounted {

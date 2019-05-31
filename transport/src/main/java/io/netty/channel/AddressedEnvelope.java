@@ -21,6 +21,7 @@ import io.netty.util.ReferenceCounted;
 import java.net.SocketAddress;
 
 /**
+ * 一个消息对象包装另一个消息，并持有发送方地址和接收方地址。
  * A message that wraps another message with a sender address and a recipient address.
  *
  * @param <M> the type of the wrapped message

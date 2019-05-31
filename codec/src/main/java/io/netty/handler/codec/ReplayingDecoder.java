@@ -28,6 +28,8 @@ import java.util.List;
 /**
  * {@link ReplayingDecoder}是{@link ByteToMessageDecoder}的一个特殊变种。
  * 它能在阻塞的IO模式中实现非阻塞的解码操作。
+ * （它通过特殊的ByteBuf和异常来实现，但是如果解码操作是有状态的，复杂度就会增加）
+ *
  * <p>
  * {@link ReplayingDecoder}和{@link ByteToMessageDecoder}最大的不同就是，
  * {@link ReplayingDecoder}允许你在实现{@code decode()} 和 {@code decodeLast()}方法时

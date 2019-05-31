@@ -54,6 +54,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     private final long id = nextTaskId.getAndIncrement();
     /**
      * 下次执行的时间戳
+     * （相对时间戳，相对于{@link #START_TIME}的时间戳）
      */
     private long deadlineNanos;
 
@@ -100,6 +101,10 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return super.executor();
     }
 
+    /**
+     * 获取截止时间，这是相对时间，非系统时间
+     * @return long
+     */
     public long deadlineNanos() {
         return deadlineNanos;
     }
@@ -113,6 +118,11 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return Math.max(0, deadlineNanos() - nanoTime());
     }
 
+    /**
+     * 获取相对于当前系统时间戳的延迟时间
+     * @param currentTimeNanos 系统当前纳秒时间戳
+     * @return 延迟时间，大于等于0
+     */
     public long delayNanos(long currentTimeNanos) {
         return Math.max(0, deadlineNanos() - (currentTimeNanos - START_TIME));
     }

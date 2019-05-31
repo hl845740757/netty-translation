@@ -17,6 +17,8 @@ package io.netty.channel;
 
 import io.netty.util.IntSupplier;
 
+import java.nio.channels.Selector;
+
 /**
  * 选择策略接口。
  * 用于指示EventLoop下一步该干什么。
@@ -31,14 +33,17 @@ import io.netty.util.IntSupplier;
 public interface SelectStrategy {
 
     /**
+     * 指示下一步应该执行阻塞的select操作 {@link Selector#select()} {@link Selector#select(long)}
      * Indicates a blocking select should follow.
      */
     int SELECT = -1;
     /**
+     * 指示IO循环应该重试，下一步应该执行非阻塞的select操作 {@link Selector#selectNow()}
      * Indicates the IO loop should be retried, no blocking select to follow directly.
      */
     int CONTINUE = -2;
     /**
+     * 指示IO循环下一步应该非阻塞地轮询新事件。
      * Indicates the IO loop to poll for new events without blocking.
      */
     int BUSY_WAIT = -3;
@@ -55,6 +60,9 @@ public interface SelectStrategy {
      * @return {@link #SELECT} if the next step should be blocking select {@link #CONTINUE} if
      *         the next step should be to not select but rather jump back to the IO loop and try
      *         again. Any value >= 0 is treated as an indicator that work needs to be done.
+     *         返回{@link #SELECT}表示下一步应该执行阻塞的select操作
+     *         返回{@link #CONTINUE}表示下一步不应该执行选择操作，而是调回IO循环再试一次。
+     *         返回任何 >= 0 的值都被视为需要完成工作的指标。
      */
     int calculateStrategy(IntSupplier selectSupplier, boolean hasTasks) throws Exception;
 }

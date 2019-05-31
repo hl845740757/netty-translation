@@ -28,7 +28,7 @@ import io.netty.util.internal.TypeParameterMatcher;
 
 /**
  * {@link MessageToByteEncoder}以一种类似流的方式将一个消息编码为{@link ByteBuf}。
- * 该类是比较简单但比较重要的一类。
+ * 该类是比较简单但比较重要的类。
  * <p>
  *     <li>该类之所以是泛型的是因为：编码时可以一个消息一个消息的编码，而不必批量的编码，是受控的</li>
  *     <li>该类对应的解码器是{@link ByteToMessageDecoder}</li>
@@ -116,12 +116,14 @@ public abstract class MessageToByteEncoder<I> extends ChannelOutboundHandlerAdap
                 try {
                     encode(ctx, cast, buf);
                 } finally {
+                    // 这里也会强制释放对象，一定要留心
                     ReferenceCountUtil.release(cast);
                 }
 
                 if (buf.isReadable()) {
                     ctx.write(buf, promise);
                 } else {
+                    // 已全部编码，释放byteBuf对象
                     buf.release();
                     ctx.write(Unpooled.EMPTY_BUFFER, promise);
                 }
@@ -159,6 +161,7 @@ public abstract class MessageToByteEncoder<I> extends ChannelOutboundHandlerAdap
      *
      * @param ctx           the {@link ChannelHandlerContext} which this {@link MessageToByteEncoder} belongs to
      * @param msg           the message to encode
+     *                      警告：该对象在方法返回之后，会调用{@link ReferenceCountUtil#refCnt(Object)}进行释放操作。
      * @param out           the {@link ByteBuf} into which the encoded message will be written
      * @throws Exception    is thrown if an error occurs
      */

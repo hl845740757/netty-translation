@@ -26,6 +26,8 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
+ * {@link MessageToMessageDecoder}将一个消息解码为另一个消息对象，该类属于较为顶层的抽象类。
+ *
  * {@link ChannelInboundHandlerAdapter} which decodes from one message to an other message.
  *
  *
@@ -87,6 +89,8 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
                 try {
                     decode(ctx, cast, out);
                 } finally {
+                    // 这里进行了强制的释放，这里是个坑，没有像SimpleChannelInboundHandler那样的autoRelease属性
+                    // 一定要留心
                     ReferenceCountUtil.release(cast);
                 }
             } else {
@@ -106,12 +110,17 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
     }
 
     /**
+     * 将msg解码为另一个消息；对于每一个写入的 且 可以被当前decoder处理的消息都会调用该方法。
+     *
      * Decode from one message to an other. This method will be called for each written message that can be handled
      * by this decoder.
      *
      * @param ctx           the {@link ChannelHandlerContext} which this {@link MessageToMessageDecoder} belongs to
-     * @param msg           the message to decode to an other one
+     * @param msg           the message to decode to an other one.
+     *                      注意：该对象在方法返回后，会调用{@link ReferenceCountUtil#refCnt(Object)}尝试释放！！！
      * @param out           the {@link List} to which decoded messages should be added
+     *                      解码的消息应该添加到out中，在本次解码完成后会统一传递给下一个handler；
+     *                      其实也可以自己选择传递给下一个channelHandler
      * @throws Exception    is thrown if an error occurs
      */
     protected abstract void decode(ChannelHandlerContext ctx, I msg, List<Object> out) throws Exception;

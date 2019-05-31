@@ -21,7 +21,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.spi.SelectorProvider;
 import java.util.Set;
 
+/**
+ * 为什么要对该类进行注释？因为想对{@link Selector}进行注释。
+ */
 final class SelectedSelectionKeySetSelector extends Selector {
+    /**
+     * 利用反射进行修改操作的。
+     * （反射修改final字段仍具有可见性保障，记得在JVM规范中）
+     */
     private final SelectedSelectionKeySet selectionKeys;
     private final Selector delegate;
 
@@ -102,6 +109,10 @@ final class SelectedSelectionKeySetSelector extends Selector {
         return delegate.select();
     }
 
+    /**
+     * 如果selector在选择操作中阻塞了，则唤醒selector，可使得select操作立即返回
+     * @return
+     */
     @Override
     public Selector wakeup() {
         return delegate.wakeup();

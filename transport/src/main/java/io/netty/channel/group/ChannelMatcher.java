@@ -19,6 +19,8 @@ package io.netty.channel.group;
 import io.netty.channel.Channel;
 
 /**
+ * Channel匹配器，用于在ChannelGroup中匹配需要操作的channel
+ *
  * Allows to only match some {@link Channel}'s for operations in {@link ChannelGroup}.
  *
  * {@link ChannelMatchers} provide you with helper methods for usual needed implementations.
@@ -26,6 +28,7 @@ import io.netty.channel.Channel;
 public interface ChannelMatcher {
 
     /**
+     * 如果指定操作需要在给定的channel上执行，则返回true。
      * Returns {@code true} if the operation should be also executed on the given {@link Channel}.
      */
     boolean matches(Channel channel);

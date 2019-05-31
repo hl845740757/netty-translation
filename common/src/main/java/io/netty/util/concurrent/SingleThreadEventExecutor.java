@@ -262,6 +262,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 轮询返回一个有效的任务。
      * @see Queue#poll()
      */
     protected Runnable pollTask() {
@@ -483,8 +484,13 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 轮询taskQueue中的所有任务，并通过{@link Runnable#run()}方法执行它们。
+     * 如果执行时间长于指定时间，该方法将会停止执行队列中的任务并返回。
+     *
      * Poll all tasks from the task queue and run them via {@link Runnable#run()} method.  This method stops running
      * the tasks in the task queue and returns if it ran longer than {@code timeoutNanos}.
+     *
+     * @param timeoutNanos 超时时间，若执行完当前任务，超过该时间，则返回
      */
     protected boolean runAllTasks(long timeoutNanos) {
         fetchFromScheduledTaskQueue();
@@ -493,7 +499,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             afterRunningAllTasks();
             return false;
         }
-
+        // 计算截止四航局
         final long deadline = ScheduledFutureTask.nanoTime() + timeoutNanos;
         long runTasks = 0;
         long lastExecutionTime;
@@ -528,6 +534,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     @UnstableApi
     protected void afterRunningAllTasks() { }
+
     /**
      * Returns the amount of time left until the scheduled task with the closest dead line is executed.
      */

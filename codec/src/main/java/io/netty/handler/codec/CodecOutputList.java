@@ -24,6 +24,9 @@ import java.util.RandomAccess;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
+ * 特定的用于解码的List。
+ * 实现了缓存机制。
+ *
  * Special {@link AbstractList} implementation which is used within our codec base classes.
  */
 final class CodecOutputList extends AbstractList<Object> implements RandomAccess {
