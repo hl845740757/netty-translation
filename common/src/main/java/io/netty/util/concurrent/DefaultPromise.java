@@ -275,7 +275,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                 }
             }
         }
-
+        // 这代码有bug，应该放在finally块中执行，如果在等待中出现其他异常，会导致中断丢失。
+        // 虽然 incWaiters 出现异常的可能性很低，但是严格的来说是不安全的。
+        // 码多必失... 相似代码/重复代码写多了就容易出现点问题。
         if (interrupted) {
             Thread.currentThread().interrupt();
         }
@@ -658,6 +660,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                 }
             }
         } finally {
+            // 这儿又是对的，这是同一个人写的吗？？？？
             if (interrupted) {
                 Thread.currentThread().interrupt();
             }
