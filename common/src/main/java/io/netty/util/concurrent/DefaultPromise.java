@@ -804,7 +804,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     /**
-     * 内部工具类，封装异常
+     * 异常holder，只有该类型表示失败。
+     * 否则无法区分{@link #setSuccess(Object) exception}。（拿异常当结果就无法区分了）
      */
     private static final class CauseHolder {
         final Throwable cause;
