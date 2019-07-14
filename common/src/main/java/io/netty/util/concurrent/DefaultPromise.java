@@ -30,6 +30,21 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/**
+ *
+ * 任务状态迁移：
+ * <pre>
+ *       （setUncancellabl）
+ *                   --------> 不可取消状态 -----|
+ *                   |                         |
+ *  初始状态 ---------|                         | -> 完成状态(isDown() == true)
+ * (result == null)  |                         |
+ *                   |-------------------------|
+ *                    (取消/异常/成功)
+ *       (cancel, tryFailure,setFailure,trySuccess,setSuccess)
+ * </pre>
+ * @param <V>
+ */
 public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(DefaultPromise.class);
     private static final InternalLogger rejectedExecutionLogger =
@@ -79,12 +94,15 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     private Object listeners;
     /**
      * 在当前对象上等待的线程数。这些线程请求持有当前对象的监视器以使用 wait()/notifyAll() 进行通信.
-     *
+     * (使用该对象的监视器锁保护)
      * Threading - synchronized(this). We are required to hold the monitor to use Java's underlying wait()/notifyAll().
      */
     private short waiters;
 
     /**
+     * 表示当前是否有线程正在通知监听器们。我们必须阻止并发的通知 和 保持监听器的先入先出顺序(先添加的先被通知)。
+     * (使用该对象的监视器锁保护)
+     *
      * Threading - synchronized(this). We must prevent concurrent notification and FIFO listener notification if the
      * executor changes.
      */
@@ -96,6 +114,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      * It is preferable to use {@link EventExecutor#newPromise()} to create a new promise
      *
      * @param executor
+     *        当future关联的操作完成时，用于通知监听器的线程。这里假设executor将会防止{@link StackOverflowError}异常(栈溢出异常)。
+     *        如果executor的堆栈超过阈值，将会提交{@link Runnable}执行以避免堆栈异常。
      *        the {@link EventExecutor} which is used to notify the promise once it is complete.
      *        It is assumed this executor will protect against {@link StackOverflowError} exceptions.
      *        The executor may be used to avoid {@link StackOverflowError} by executing a {@link Runnable} if the stack
@@ -142,9 +162,13 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     @Override
     public boolean setUncancellable() {
+        // 尝试置为不可取消状态
         if (RESULT_UPDATER.compareAndSet(this, null, UNCANCELLABLE)) {
             return true;
         }
+        // 到这里 result一定不可为null，表示未 非取消状态 或 完成状态
+        // !isDone0(result) 其实等价于 result == UNCANCELLABLE
+        // !isCancelled0(result) 表示非取消进入的完成状态
         Object result = this.result;
         return !isDone0(result) || !isCancelled0(result);
     }
@@ -193,7 +217,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                 addListener0(listener);
             }
         }
-
+        // 必须检查是否已经进入完成状态，避免信号丢失。
         if (isDone()) {
             notifyListeners();
         }
@@ -568,6 +592,11 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         return setValue0(new CauseHolder(checkNotNull(cause, "cause")));
     }
 
+    /**
+     * 尝试赋值结果(从未完成状态进入完成状态)
+     * @param objResult 要赋的值，一定不为null
+     * @return 如果赋值成功，则返回true，否则返回false。
+     */
     private boolean setValue0(Object objResult) {
         if (RESULT_UPDATER.compareAndSet(this, null, objResult) ||
             RESULT_UPDATER.compareAndSet(this, UNCANCELLABLE, objResult)) {
