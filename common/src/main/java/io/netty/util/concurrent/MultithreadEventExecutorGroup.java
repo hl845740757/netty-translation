@@ -245,7 +245,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 return false;
             }
         }
-        // 所有child都处理正在关闭状态
+        // all match
         return true;
     }
 
@@ -261,6 +261,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 return false;
             }
         }
+        // all match
         return true;
     }
 
@@ -276,6 +277,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 return false;
             }
         }
+        // all match
         return true;
     }
 

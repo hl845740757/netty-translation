@@ -34,14 +34,14 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *
  * 任务状态迁移：
  * <pre>
- *       （setUncancellabl）
- *                   --------> 不可取消状态 -----|
- *                   |                         |
- *  初始状态 ---------|                         | -> 完成状态(isDown() == true)
- * (result == null)  |                         |
- *                   |-------------------------|
- *                    (取消/异常/成功)
- *       (cancel, tryFailure,setFailure,trySuccess,setSuccess)
+ *       (setUncancellabl) (result == UNCANCELLABLE)     (异常/成功)
+ *                   --------> 不可取消状态 ------------------------|
+ *                   |         (未完成)                            |
+ *  初始状态 ---------|                                            | ----> 完成状态(isDown() == true)
+ * (result == null)  |                                            |
+ *  (未完成)          |--------------------------------------------|
+ *                                 (取消/异常/成功)
+ *                 (cancel, tryFailure,setFailure,trySuccess,setSuccess)
  * </pre>
  * @param <V>
  */
@@ -74,7 +74,9 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      */
     private volatile Object result;
     /**
-     * 用于执行通知任务
+     * 用于执行通知任务。
+     * 创建Promise的EventLoop，也是任务执行的线程，也是默认的通知用的executor。
+     * 如果任务执行期间可能改变executor，那么需要重写{@link #executor()}，以返回最新的executor。
      */
     private final EventExecutor executor;
     /**

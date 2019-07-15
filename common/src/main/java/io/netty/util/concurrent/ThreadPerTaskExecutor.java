@@ -20,7 +20,8 @@ import java.util.concurrent.ThreadFactory;
 
 /**
  * ThreadPerMessage Design Pattern
- * 不推荐使用，会造成大量的资源浪费。
+ * 正常情况下不推荐使用，会造成大量的资源浪费。
+ * netty里是为了保证能创建足够的线程用的。
  */
 public final class ThreadPerTaskExecutor implements Executor {
 

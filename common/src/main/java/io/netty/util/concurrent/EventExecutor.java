@@ -85,7 +85,7 @@ public interface EventExecutor extends EventExecutorGroup {
 
     /**
      * 创建一个{@link Promise}(一个可写的Future)。
-     * 用户提交一个请求之后，返回给客户端一个Promise(请求的操作对象也会持有该promise对象)，
+     * 用户提交一个任务之后，返回给客户端一个Promise，
      * 使得用户可以获取操作结果和添加监听器。
      *
      * Return a new {@link Promise}.
