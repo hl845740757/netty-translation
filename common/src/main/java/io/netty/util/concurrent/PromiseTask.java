@@ -95,6 +95,9 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
         }
     }
 
+    // --------------- 禁用这些public方法，因为PromiseTask既是Promise，也是Task，结果由它自己来赋值
+    // --------------- 由protected方法替代（需要支持子类调用）
+
     /**
      * {@link PromiseTask}的结果由自己赋值，因此外部赋值抛出异常
      * @param cause

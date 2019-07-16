@@ -423,6 +423,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     /**
+     * 获取在promise关联的任务完成的时候用于通知的executor。
+     *
+     * 这里假设该executor会防止 {@link StackOverflowError}(堆栈溢出)。
+     * 当该executor的栈深度超过一个阈值之后，该executor可能通过使用 {@link java.util.concurrent.Executor#execute(Runnable)}
+     * 以避免出现堆栈异常。
+     *
      * Get the executor used to notify listeners when this promise is complete.
      * <p>
      * It is assumed this executor will protect against {@link StackOverflowError} exceptions.
@@ -434,6 +440,10 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         return executor;
     }
 
+    /**
+     * 检查死锁。
+     * {@link #executor()}是任务当前的执行环境，EventLoop是单线程的，不可以在当前线程上等待另一个任务完成，会导致死锁。
+     */
     protected void checkDeadLock() {
         EventExecutor e = executor();
         if (e != null && e.inEventLoop()) {
@@ -513,24 +523,27 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     private void notifyListenersNow() {
-        // 通过同步块，取出当前监听器存为本地变量，标记为正在进行通知，并将监听器清除
+        // 用于拉取最新的监听器，避免长时间的占有锁
         Object listeners;
         synchronized (this) {
+            // 有线程正在进行通知 或当前 没有监听器，则不需要当前线程进行通知
             // Only proceed if there are listeners to notify and we are not already notifying listeners.
             if (notifyingListeners || this.listeners == null) {
                 return;
             }
+            // 标记为正在通知(每一个正在通知的线程都会将所有的监听器通知一遍)
             notifyingListeners = true;
             listeners = this.listeners;
             this.listeners = null;
         }
         for (;;) {
+            // 通知当前批次的监听器(此时不需要获得锁)
             if (listeners instanceof DefaultFutureListeners) {
                 notifyListeners0((DefaultFutureListeners) listeners);
             } else {
                 notifyListener0(this, (GenericFutureListener<?>) listeners);
             }
-            // for循环里面加锁，这个操作不是很敢模仿啊
+            // 通知完当前批次后，检查是否有新的监听器加入
             synchronized (this) {
                 // 如果在通知完当前的监听器之后，没有新的监听器加入，那么表示通知完成，否则需要通知新加入的监听器
                 if (this.listeners == null) {
@@ -586,10 +599,19 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
     }
 
+    /**
+     * Q:为什么要这么写？
+     * A:为了支持子类重写 {@link #setSuccess(Object)} {@link #setFailure(Throwable)}
+     * {@link #trySuccess(Object)} {@link #tryFailure(Throwable)}
+     */
     private boolean setSuccess0(V result) {
         return setValue0(result == null ? SUCCESS : result);
     }
 
+    /**
+     * 为什么要这么写？
+     * @see #setSuccess0(Object)
+     */
     private boolean setFailure0(Throwable cause) {
         return setValue0(new CauseHolder(checkNotNull(cause, "cause")));
     }
@@ -822,11 +844,12 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      * @return
      */
     private static boolean isCancelled0(Object result) {
+        // CauseHolder 表示执行失败，CancellationException表示取消
         return result instanceof CauseHolder && ((CauseHolder) result).cause instanceof CancellationException;
     }
 
     /**
-     * 查询结果是否表示已完成
+     * 查询结果是否表示已完成。
      * @param result 结果的缓存变量，将volatile变量存为本地变量，避免在查询过程中数据发生变更。
      * @return true or flase
      */
