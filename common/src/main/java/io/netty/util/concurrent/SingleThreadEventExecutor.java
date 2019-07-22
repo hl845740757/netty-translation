@@ -268,8 +268,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     protected void interruptThread() {
         Thread currentThread = thread;
         if (currentThread == null) {
-            // 当前还没有新建线程，那么可以中断
-            // 讲道理这是一个先检查后执行的操作，这不安全
+            // 当前还没有新建线程，添加中断标记
+            // 讲道理这是一个先检查后执行的操作，这不安全，主要是只在startThread的时候进行了检测
+            // eg: 1.检测到null 2.线程启动(未检测到中断) 3.这里设置为true  结果什么也没干
+            // 不过这里是protected，是给子类使用的，也就是说用于中断自己的，因此是安全的
             interrupted = true;
         } else {
             // 当前已新建线程，那么中断它使用的线程
