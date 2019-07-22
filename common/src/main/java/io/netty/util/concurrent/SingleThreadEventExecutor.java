@@ -133,6 +133,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private final Semaphore threadLock = new Semaphore(0);
     /**
      * 线程关闭钩子，当线程要退出时，执行这些关闭钩子
+     * 它不是线程安全的，是通过{@link #execute(Runnable)}来实现安全性的
      */
     private final Set<Runnable> shutdownHooks = new LinkedHashSet<Runnable>();
     /**
@@ -518,7 +519,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             afterRunningAllTasks();
             return false;
         }
-        // 计算截止四航局
+        // 计算截止时间
         final long deadline = ScheduledFutureTask.nanoTime() + timeoutNanos;
         long runTasks = 0;
         long lastExecutionTime;
@@ -625,12 +626,17 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 添加一个线程退出时的钩子
+     * Hook -- 钩子 -- 将自己的行为添加到某个流程中，常用在模板方法模式 或 回调中。
+     *
      * Add a {@link Runnable} which will be executed on shutdown of this instance
      */
     public void addShutdownHook(final Runnable task) {
         if (inEventLoop()) {
+            // 如果在同一个线程下，则可以安全的直接添加
             shutdownHooks.add(task);
         } else {
+            // 如果在不同的线程下，则通过发消息(提交任务)来添加 ---- 当有大量这样的代码时，需要保证队列不能太小
             execute(new Runnable() {
                 @Override
                 public void run() {
@@ -641,12 +647,16 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 删除一个之前添加的线程退出钩子
+     *
      * Remove a previous added {@link Runnable} as a shutdown hook
      */
     public void removeShutdownHook(final Runnable task) {
         if (inEventLoop()) {
+            // 如果在同一个线程下，则可以安全的直接删除
             shutdownHooks.remove(task);
         } else {
+            // 如果在不同的线程下，则通过发消息(提交任务)来删除
             execute(new Runnable() {
                 @Override
                 public void run() {
@@ -656,6 +666,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    /**
+     * 执行所有的线程退出钩子 -- 线程准备退出时
+     * @return 是否至少执行了一个钩子
+     */
     private boolean runShutdownHooks() {
         boolean ran = false;
         // Note shutdown hooks can add / remove shutdown hooks.
