@@ -48,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public abstract class SingleThreadEventExecutor extends AbstractScheduledEventExecutor implements OrderedEventExecutor {
 
+    /** 最少16个任务空间。默认无限制 */
     static final int DEFAULT_MAX_PENDING_EXECUTOR_TASKS = Math.max(16,
             SystemPropertyUtil.getInt("io.netty.eventexecutor.maxPendingTasks", Integer.MAX_VALUE));
 
@@ -125,7 +126,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     private volatile boolean interrupted;
     /**
-     * 默认资源为0的信号量，也就是说：除非先释放资源否则无法申请资源
+     * 线程锁。
+     * 默认资源为0的信号量，也就是说：除非先释放资源否则无法申请资源。
+     * (不知是不是我还没捋清楚，用{@link #terminationFuture} 好像就可以了)
      */
     private final Semaphore threadLock = new Semaphore(0);
     /**
@@ -134,6 +137,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private final Set<Runnable> shutdownHooks = new LinkedHashSet<Runnable>();
     /**
      * 当且仅当{@link #addTask(Runnable)}能唤醒executor线程的时候，为true。
+     * Q:什么意思呢？
+     * A:线程可能阻塞在taskQueue上等待任务，这种情况下，添加一个任务可以唤醒线程，但是线程也可能阻塞在其它地方！
+     * 当阻塞在其它地方时，添加一个任务到taskQueue并不能唤醒线程，这时子类需要实现自己的唤醒机制。
      */
     private final boolean addTaskWakesUp;
     /**
@@ -197,6 +203,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * @param executor          the {@link Executor} which will be used for executing
      * @param addTaskWakesUp    {@code true} if and only if invocation of {@link #addTask(Runnable)} will wake up the
      *                          executor thread
+     *                          当且仅当{@link #addTask(Runnable)}可以唤醒executor线程时为true。
      */
     protected SingleThreadEventExecutor(EventExecutorGroup parent, Executor executor, boolean addTaskWakesUp) {
         this(parent, executor, addTaskWakesUp, DEFAULT_MAX_PENDING_EXECUTOR_TASKS, RejectedExecutionHandlers.reject());
@@ -206,18 +213,24 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * Create a new instance
      *
      * @param parent            the {@link EventExecutorGroup} which is the parent of this instance and belongs to it
+     *                          EventExecutor所属的父节点
      * @param executor          the {@link Executor} which will be used for executing
+     *                          用于执行的executor
      * @param addTaskWakesUp    {@code true} if and only if invocation of {@link #addTask(Runnable)} will wake up the
      *                          executor thread
+     *                          当且仅当{@link #addTask(Runnable)}可以唤醒executor线程时为true。
+     *
      * @param maxPendingTasks   the maximum number of pending tasks before new tasks will be rejected.
+     *                          允许的最大任务数，当队列中任务数到达该值时，新提交的任务将被拒绝。
      * @param rejectedHandler   the {@link RejectedExecutionHandler} to use.
+     *                          任务被拒绝时的处理策略。
      */
     protected SingleThreadEventExecutor(EventExecutorGroup parent, Executor executor,
                                         boolean addTaskWakesUp, int maxPendingTasks,
                                         RejectedExecutionHandler rejectedHandler) {
         super(parent);
         this.addTaskWakesUp = addTaskWakesUp;
-        // 最多只允许16个任务
+        // 至少允许压入16个任务
         this.maxPendingTasks = Math.max(16, maxPendingTasks);
         this.executor = ObjectUtil.checkNotNull(executor, "executor");
         taskQueue = newTaskQueue(this.maxPendingTasks);
@@ -233,8 +246,11 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 创建一个管理要执行的任务的队列。默认的实现返回一个{@link LinkedBlockingQueue}，如果子类并不会在任务队列上执行任何阻塞调用，
+     * 那么可以覆盖该方法并返回一个更高性能的不支持阻塞操作的实现。
+     *
      * 这是一个工厂方法，子类可以覆盖它以创建不同类型的队列。
-     * 有界队列，任务到达上限时会阻塞。
+     * @param maxPendingTasks 有界队列，任务到达上限时会阻塞。
      *
      * Create a new {@link Queue} which will holds the tasks to execute. This default implementation will return a
      * {@link LinkedBlockingQueue} but if your sub-class of {@link SingleThreadEventExecutor} will not do any blocking
@@ -590,7 +606,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
-     * 唤醒线程，线程当前可能阻塞在等待任务的过程中(take)
+     * 唤醒线程。
+     * 线程当前可能阻塞在等待任务的过程中(take)，如果阻塞在任务队列的take方法上，那么压入一个任务往往可以唤醒线程。
+     * 但线程更有可能阻塞在其它地方，因此子类需要重写该方法以实现真正的唤醒操作，超类仅仅是处理一些简单的情况。
+     *
      * @param inEventLoop 当前是否是EventLoop线程
      */
     protected void wakeup(boolean inEventLoop) {
@@ -670,7 +689,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (unit == null) {
             throw new NullPointerException("unit");
         }
-
+        // executor正在关闭，可以直接开始等待
         if (isShuttingDown()) {
             return terminationFuture();
         }
@@ -688,16 +707,19 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             if (inEventLoop) {
                 newState = ST_SHUTTING_DOWN;
             } else {
+                // 如果是其它线程关闭executor
                 switch (oldState) {
                     case ST_NOT_STARTED:
                     case ST_STARTED:
                         newState = ST_SHUTTING_DOWN;
                         break;
                     default:
+                        // default 其实只有 ST_SHUTTING_DOWN
                         newState = oldState;
                         wakeup = false;
                 }
             }
+            // 强制切换到正在关闭状态
             if (STATE_UPDATER.compareAndSet(this, oldState, newState)) {
                 break;
             }
@@ -705,7 +727,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         gracefulShutdownQuietPeriod = unit.toNanos(quietPeriod);
         gracefulShutdownTimeout = unit.toNanos(timeout);
 
+        // 确保线程已启动，否则无法进入终止状态
         if (ensureThreadStarted(oldState)) {
+            // 已终止
             return terminationFuture;
         }
 
@@ -728,10 +752,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             return;
         }
 
+        // 存为临时变量，减少volatile读消耗（有for循环），因为在一次方法调用中 inEventLoop结果是不会变化的。
         boolean inEventLoop = inEventLoop();
         boolean wakeup;
         int oldState;
         for (;;) {
+            // 这代码其实写复杂了
             if (isShuttingDown()) {
                 return;
             }
@@ -886,8 +912,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 }
             }
         }
-        // 如果 addTask(task) 不能自动唤醒线程 而提交的任务可以唤醒线程时，唤醒线程
+        // 如果 addTask(task) 并不能唤醒线程（线程可能阻塞在其它地方，taskQueue只是其中之一），并且提交的任务可以唤醒线程时，唤醒线程
         if (!addTaskWakesUp && wakesUpForTask(task)) {
+            // 只有子类自己知道如何唤醒线程
             wakeup(inEventLoop);
         }
     }
@@ -951,7 +978,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
-     * 任务是否唤醒线程
+     * 任务是否可以用来唤醒线程，如果返回true，意味着会调用{@link #wakeup(boolean)}
+     *
      * @param task 新任务
      * @return true/false 如果可以唤醒线程则返回true，如果不可以唤醒线程则返回false
      */
@@ -993,6 +1021,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     }
 
+    /**
+     * 确认线程已启动 --------- 有个疑问？如果shutdown的时候，executor尚未启动过，是否有必要启动里面的线程？
+     *
+     * @param oldState 关闭前的状态
+     * @return 如果线程已终止，则返回true
+     */
     private boolean ensureThreadStarted(int oldState) {
         if (oldState == ST_NOT_STARTED) {
             try {
@@ -1031,6 +1065,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 } catch (Throwable t) {
                     logger.warn("Unexpected exception from an event executor: ", t);
                 } finally {
+                    // 如果是非正常退出，需要切换到正在关闭状态
                     for (;;) {
                         int oldState = state;
                         if (oldState >= ST_SHUTTING_DOWN || STATE_UPDATER.compareAndSet(
@@ -1049,6 +1084,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                     }
 
                     try {
+                        // 尝试执行所有剩余的任务和关闭钩子，然后才能安全的退出 - 当然这也有风险，在错误的状态下继续运行，是由风险的
                         // Run all remaining tasks and shutdown hooks.
                         for (;;) {
                             if (confirmShutdown()) {
@@ -1057,6 +1093,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                         }
                     } finally {
                         try {
+                            // 退出前进行必要的清理
                             cleanup();
                         } finally {
                             // Lets remove all FastThreadLocals for the Thread as we are about to terminate and notify
@@ -1065,6 +1102,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                             // See https://github.com/netty/netty/issues/6596.
                             FastThreadLocal.removeAll();
 
+                            // 标记为已进入终止状态
                             STATE_UPDATER.set(SingleThreadEventExecutor.this, ST_TERMINATED);
                             threadLock.release();
                             if (!taskQueue.isEmpty()) {
@@ -1073,6 +1111,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                                             "non-empty task queue (" + taskQueue.size() + ')');
                                 }
                             }
+                            // 设置future结果，通知在该future上等待的线程
                             terminationFuture.setSuccess(null);
                         }
                     }

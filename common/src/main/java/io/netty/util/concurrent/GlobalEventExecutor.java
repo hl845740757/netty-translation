@@ -264,6 +264,11 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         if (started.compareAndSet(false, true)) {
             // 通过任务创建线程，由于任务是死循环任务，因此独占该线程
             final Thread t = threadFactory.newThread(taskRunner);
+            // classLoader泄漏：
+            // 如果创建线程的时候，未指定contextClassLoader,那么将会继承父线程(创建当前线程的线程)的contextClassLoader，见Thread.init()方法。
+            // 如果创建线程的线程是由自定义类加载器加载的，那么新创建的线程将继承(使用)该contextClass，在线程未回收期间，将导致自定义类加载器无法回收。
+            // 从而导致ClassLoader内存泄漏，基于自定义类加载器的某些设计可能失效。
+
             // Set to null to ensure we not create classloader leaks by holds a strong reference to the inherited
             // classloader.
             // See:
