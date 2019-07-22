@@ -32,15 +32,15 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * 核心类:单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
  *
  *
- * 它的实现很简单：就是提交一个任务到给定Executor。提交一个死循环任务，以占用这个线程。
+ * 线程获取：提交一个任务到给定Executor，由于提交的是一个死循环任务，因此可以占用这个线程。
  * 因此给定的Executor必须能创建足够多的线程，否则会无法执行。
+ *
  * <li>它真正的处理所有的提交的任务或事件。</li>
  * <li>与之相对的是{@link MultithreadEventExecutorGroup}</li>
  *
  * 那为什么会觉得有点别扭呢？
  * {@link SingleThreadEventExecutor}是一个单线程的Executor,只是它的线程不是自己创建的，
  * 也不是使用线程工厂创建的，而是通过提交一个死循环的任务到被包装的Executor得到的。
- * 包装的有点厉害。
  * <p>
  *
  * Abstract base class for {@link OrderedEventExecutor}'s that execute all its submitted tasks in a single thread.
@@ -64,15 +64,15 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      */
     private static final int ST_STARTED = 2;
     /**
-     * 正在关闭状态
+     * 正在关闭状态 {@link #shutdownGracefully(long, long, TimeUnit)}
      */
     private static final int ST_SHUTTING_DOWN = 3;
     /**
-     * 已关闭状态
+     * 已关闭状态 {@link #shutdown()}
      */
     private static final int ST_SHUTDOWN = 4;
     /**
-     * 已终止状态
+     * 已终止状态 {@link #ensureThreadStarted(int)} {@link #doStartThread()}
      */
     private static final int ST_TERMINATED = 5;
 
@@ -163,6 +163,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private volatile long gracefulShutdownQuietPeriod;
     private volatile long gracefulShutdownTimeout;
+    /** 进入安静期的开始时间 */
     private long gracefulShutdownStartTime;
 
     private final Promise<?> terminationFuture = new DefaultPromise<Void>(GlobalEventExecutor.INSTANCE);
@@ -876,7 +877,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (inEventLoop()) {
             throw new IllegalStateException("cannot await termination of the current thread");
         }
-
+        // 为何不在 terminationFuture 上等待？
+        // 目前看了一下：在ensureThreadStarted(int)的时候并没有调用threadLock.release()，是否存在问题？
         if (threadLock.tryAcquire(timeout, unit)) {
             threadLock.release();
         }
@@ -914,7 +916,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 }
             }
         }
-        // 如果 addTask(task) 并不能唤醒线程（线程可能阻塞在其它地方，taskQueue只是其中之一），并且提交的任务可以唤醒线程时，唤醒线程
+        // 如果 addTask(task) 并不能唤醒线程（线程可能阻塞在其它地方，taskQueue只是其中之一），并且提交的任务需要唤醒线程时，则唤醒线程
         if (!addTaskWakesUp && wakesUpForTask(task)) {
             // 只有子类自己知道如何唤醒线程
             wakeup(inEventLoop);
@@ -981,6 +983,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * 任务是否可以用来唤醒线程，如果返回true，意味着会调用{@link #wakeup(boolean)}
+     * (提交的任务是否需要唤醒线程时)
      *
      * @param task 新任务
      * @return true/false 如果可以唤醒线程则返回true，如果不可以唤醒线程则返回false
@@ -1034,6 +1037,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             try {
                 doStartThread();
             } catch (Throwable cause) {
+                // 这里没有调用 threadLock.release()方法，是否会存在问题
+
                 STATE_UPDATER.set(this, ST_TERMINATED);
                 terminationFuture.tryFailure(cause);
 
