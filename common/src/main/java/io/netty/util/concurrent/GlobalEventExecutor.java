@@ -56,7 +56,12 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
      */
     final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
     /**
-     * 安静期任务，它是一个标记任务
+     * 安静期任务，类似一个监控任务，用于监控线程是否空闲的。
+     * 它是一个周期性任务，固定间隔执行，会一直存在于{@link #scheduledTaskQueue()}中，
+     * 由于它的存在，使得{@link #takeTask()}永远不会调用taskQueue.take()方法，不会陷入无限期等待，只会调用有时限的take(long, TimeUnit)方法。
+     * 当且仅当 {@link #taskQueue} 和 {@link #scheduledTaskQueue()}只剩下quietPeriodTask时，如果它被调度到就表示着可以尝试关闭了。
+     *
+     * 平心而论：监控任务，这个设计还是很有启发意义的。
      */
     final ScheduledFutureTask<Void> quietPeriodTask = new ScheduledFutureTask<Void>(
             this, Executors.<Void>callable(new Runnable() {
@@ -89,7 +94,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
     private final Future<?> terminationFuture = new FailedFuture<Object>(this, new UnsupportedOperationException());
 
     private GlobalEventExecutor() {
-        // 初始化队列，并填充一个标记任务
+        // 填充安静期任务，用于
         scheduledTaskQueue().add(quietPeriodTask);
     }
 
@@ -105,7 +110,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         // 注意 taskQueue 中包含的任务，否则会看懵逼
         BlockingQueue<Runnable> taskQueue = this.taskQueue;
         for (;;) {
-            // 查看是否有待执行的周期性调度的任务，如果有的话，不可以无限制的在taskQueue上等待
+            // 查看是否有待执行的周期性调度的任务，如果有的话，不可以无限制的在taskQueue上等待 --- 填充quietPeriodTask的目的就在这里了。
             ScheduledFutureTask<?> scheduledTask = peekScheduledTask();
             if (scheduledTask == null) {
                 // 当前无等待调度的任务，因此可以采用take，阻塞直到taskQueue中提交新任务。
@@ -251,7 +256,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
             throw new NullPointerException("task");
         }
 
-        // 添加到任务队列，这里不是优先队列，而不普通的线程安全队列
+        // 添加到任务队列，这里不是优先队列，而是普通的线程安全队列
         addTask(task);
 
         // 另一个线程提交任务时需要启动EventLoop线程
@@ -260,14 +265,20 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         }
     }
 
+    /**
+     * startThread 和 线程退出 是如何保证安全性的？
+     * 先添加任务到队列 ---------> 那么在 {@link #startThread()}后，如果成功将{@link #started}设置为true，那么taskQueue一定不为空！！！
+     * 在检测是否需要退出时 ------> 如果覆盖了{@link #startThread()}的值，那么队列一定不为空，就可以知道需要继续执行。
+     */
     private void startThread() {
         if (started.compareAndSet(false, true)) {
             // 通过任务创建线程，由于任务是死循环任务，因此独占该线程
             final Thread t = threadFactory.newThread(taskRunner);
             // classLoader泄漏：
             // 如果创建线程的时候，未指定contextClassLoader,那么将会继承父线程(创建当前线程的线程)的contextClassLoader，见Thread.init()方法。
-            // 如果创建线程的线程是由自定义类加载器加载的，那么新创建的线程将继承(使用)该contextClass，在线程未回收期间，将导致自定义类加载器无法回收。
+            // 如果创建线程的线程contextClassLoader是自定义类加载器，那么新创建的线程将继承(使用)该contextClassLoader，在线程未回收期间，将导致自定义类加载器无法回收。
             // 从而导致ClassLoader内存泄漏，基于自定义类加载器的某些设计可能失效。
+            // 我们显式的将其设置为null，表示使用系统类加载器进行加载，避免造成内存泄漏。
 
             // Set to null to ensure we not create classloader leaks by holds a strong reference to the inherited
             // classloader.
@@ -292,6 +303,10 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
     }
 
     final class TaskRunner implements Runnable {
+
+        /**
+         * @see #quietPeriodTask
+         */
         @Override
         public void run() {
             for (;;) {
@@ -303,7 +318,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                     } catch (Throwable t) {
                         logger.warn("Unexpected exception from the global event executor: ", t);
                     }
-                    // 如果不是安静期任务，则继续执行，如果是则表示可能没有新任务了
+                    // 如果是quietPeriodTask，则需要检测是否只剩下该任务了，如果是，则表示可能需要关闭了
                     if (task != quietPeriodTask) {
                         continue;
                     }
@@ -319,6 +334,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                     boolean stopped = started.compareAndSet(true, false);
                     assert stopped;
 
+                    // 如果只剩下了quietPeriodTask，那么表示当前线程可以退出了。
                     // Check if there are pending entries added by execute() or schedule*() while we do CAS above.
                     if (taskQueue.isEmpty() && (scheduledTaskQueue == null || scheduledTaskQueue.size() == 1)) {
                         // A) No new task was added and thus there's nothing to handle
@@ -328,6 +344,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
                         break;
                     }
 
+                    // 由于addTask在startThread之前，那么可以保证：如果有其它的任务，一定有人尝试启动线程，那么将started标记为true
                     // There are pending tasks added again.
                     if (!started.compareAndSet(false, true)) {
                         // startThread() started a new thread and set 'started' to true.

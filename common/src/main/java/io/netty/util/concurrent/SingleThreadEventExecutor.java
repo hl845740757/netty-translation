@@ -357,7 +357,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                         return null;
                     }
                 }
-                // 难怪没有重复代码提示，这里的else去掉了
+                // 难怪没有重复代码提示，这里的else去掉了 -- 比较GlobalEventExecutor
 
                 // 如果taskQueue不包含可执行的任务，那么就会从scheduledTaskQueue中拉取可能执行的任务到taskQueue
                 // fetchFromScheduledTaskQueue 这个方法很重要
@@ -1068,7 +1068,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void doStartThread() {
         assert thread == null;
-        // 在这里提交一个任务，回调到自身的run逻辑
+        // 在这里提交一个任务，回调到自身的run逻辑,通过死循环占有线程。
         executor.execute(new Runnable() {
             @Override
             public void run() {

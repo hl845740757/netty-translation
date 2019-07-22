@@ -25,6 +25,10 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 可周期性调度的任务
+ * @param <V> the type of value
+ */
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFuture<V>, PriorityQueueNode {
     private static final AtomicLong nextTaskId = new AtomicLong();
@@ -137,7 +141,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         if (this == o) {
             return 0;
         }
-
+        // 先比较执行间隔，再比较id --- 用于调度排序
         ScheduledFutureTask<?> that = (ScheduledFutureTask<?>) o;
         long d = deadlineNanos() - that.deadlineNanos();
         if (d < 0) {
@@ -164,6 +168,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                     setSuccessInternal(result);
                 }
             } else {
+                // 检查任务是否已经被取消
                 // check if is done as it may was cancelled
                 if (!isCancelled()) {
                     task.call();

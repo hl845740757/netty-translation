@@ -68,7 +68,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
-     * 获取默认的周期性任务队列，它不是线程安全的
+     * 获取默认的周期性任务队列，它不是线程安全的，通过 {@link #inEventLoop()}保护
      * @return
      */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue() {
