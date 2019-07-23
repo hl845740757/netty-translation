@@ -35,6 +35,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 一个单线程的{@link EventExecutor}。它会自动的启动和停止它的线程当1秒之内没有任务填充到它的任务队列时。
  * 请注意：该Executor不可扩展用于调度大量的任务，请使用专用的线程。
  *
+ * 评价：讲道理不应该继承AbstractScheduledEventExecutor，不应该支持schedule系列方法，因为GlobalEventExecutor的
+ * 自动关闭实现很特殊，如果GlobalEventExecutor中存在周期性的任务，如果不手动取消这些任务，那么可能导致GlobalEventExecutor无法关闭！
+ * 因此，我们使用的时候不要使用schedule系列的接口！！！否则可能导致JVM无法退出！
+ *
  * Single-thread singleton {@link EventExecutor}.  It starts the thread automatically and stops it when there is no
  * task pending in the task queue for 1 second.  Please note it is not scalable to schedule large number of tasks to
  * this executor; use a dedicated executor.
@@ -56,12 +60,12 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
      */
     final BlockingQueue<Runnable> taskQueue = new LinkedBlockingQueue<Runnable>();
     /**
-     * 安静期任务，类似一个监控任务，用于监控线程是否空闲的。
+     * 安静期任务，可看做一个监控任务，用于监控线程是否空闲的。
      * 它是一个周期性任务，固定间隔执行，会一直存在于{@link #scheduledTaskQueue()}中，
      * 由于它的存在，使得{@link #takeTask()}永远不会调用taskQueue.take()方法，不会陷入无限期等待，只会调用有时限的take(long, TimeUnit)方法。
      * 当且仅当 {@link #taskQueue} 和 {@link #scheduledTaskQueue()}只剩下quietPeriodTask时，如果它被调度到就表示着可以尝试关闭了。
      *
-     * 平心而论：监控任务，这个设计还是很有启发意义的。
+     * 平心而论：监控任务，这个设计还是很有启发意义的。不过这里的实现有风险，如果有人使用了schedule接口，可能导致JVM无法退出。
      */
     final ScheduledFutureTask<Void> quietPeriodTask = new ScheduledFutureTask<Void>(
             this, Executors.<Void>callable(new Runnable() {
@@ -256,7 +260,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
             throw new NullPointerException("task");
         }
 
-        // 添加到任务队列，这里不是优先队列，而是普通的线程安全队列
+        // 添加到任务队列，必须在startThread之前添加到队列
         addTask(task);
 
         // 另一个线程提交任务时需要启动EventLoop线程
@@ -297,6 +301,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
             // an assert error.
             // See https://github.com/netty/netty/issues/4357
             // 先赋值再启动才具有happens-before关系，新线程才能看见thread属性为自己
+            // 线程启动原则: start()之前的操作happens-before start()之后的所有操作(happens-before于新启动的线程中的所有逻辑)
             thread = t;
             t.start();
         }
