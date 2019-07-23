@@ -264,7 +264,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
-     * 中断当前运行的线程
+     * 中断当前运行的线程，唤醒线程用的
      * Interrupt the current running {@link Thread}.
      */
     protected void interruptThread() {
@@ -784,6 +784,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             if (inEventLoop) {
                 newState = ST_SHUTDOWN;
             } else {
+                // 不在EventLoop线程，需要判断是否需要换线线程
                 switch (oldState) {
                     case ST_NOT_STARTED:
                     case ST_STARTED:
