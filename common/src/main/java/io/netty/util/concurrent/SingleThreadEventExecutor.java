@@ -273,7 +273,6 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             // 当前还没有新建线程，添加中断标记
             // 讲道理这是一个先检查后执行的操作，这不安全，主要是只在startThread的时候进行了检测
             // eg: 1.检测到null 2.线程启动(未检测到中断) 3.这里设置为true  结果什么也没干
-            // 不过这里是protected，是给子类使用的，也就是说用于中断自己的，因此是安全的
             interrupted = true;
         } else {
             // 当前已新建线程，那么中断它使用的线程
@@ -613,6 +612,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * 唤醒线程。
      * 线程当前可能阻塞在等待任务的过程中(take)，如果阻塞在任务队列的take方法上，那么压入一个任务往往可以唤醒线程。
      * 但线程更有可能阻塞在其它地方，因此子类需要重写该方法以实现真正的唤醒操作，超类仅仅是处理一些简单的情况。
+     *
+     * Q: 为什么默认实现是向taskQueue中插入一个任务，而不是中断线程{@link #interruptThread()} ?
+     * A: 我先不说这里能不能唤醒线程这个问题。
+     *    中断最致命的一点是：向目标线程发出中断请求以后，你并不知道目标线程接收到中断信号的时候正在做什么！！！
+     *    因此它并不是一种唤醒/停止目标线程的最佳方式，它可能导致一些需要原子执行的操作失败，也可能导致其它的问题。
+     *    因此最好是对症下药，默认实现里认为线程可能阻塞在taskQueue上，因此我们尝试压入一个任务以尝试唤醒它。
      *
      * @param inEventLoop 当前是否是EventLoop线程
      */
