@@ -267,8 +267,8 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
 
     /**
      * startThread 和 线程退出 是如何保证安全性的？
-     * 先添加任务到队列 ---------> 那么在 {@link #startThread()}后，如果成功将{@link #started}设置为true，那么taskQueue一定不为空！！！
-     * 在检测是否需要退出时 ------> 如果覆盖了{@link #startThread()}的值，那么队列一定不为空，就可以知道需要继续执行。
+     * 先添加任务到队列 ---------> 那么在startThread()后，如果成功将{@link #started}设置为true，那么taskQueue和{@link #scheduledTaskQueue()}中一定至少存在一个非 {@link #quietPeriodTask}任务。
+     * 在检测是否需要退出时 ------> 如果覆盖了startThread() 的值，那么一定有一个新的任务需要执行，就可以知道需要继续执行。
      */
     private void startThread() {
         if (started.compareAndSet(false, true)) {
