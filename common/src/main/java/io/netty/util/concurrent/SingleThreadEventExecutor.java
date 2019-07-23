@@ -32,9 +32,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * 核心类:单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
  *
  *
- * 线程获取：提交一个任务到给定Executor，由于提交的是一个死循环任务，因此可以占用这个线程。
- * 因此给定的Executor必须能创建足够多的线程，否则会无法执行。
- *
  * <li>它真正的处理所有的提交的任务或事件。</li>
  * <li>与之相对的是{@link MultithreadEventExecutorGroup}</li>
  *
@@ -119,6 +116,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private volatile ThreadProperties threadProperties;
     /**
      * 依赖的{@link Executor},线程由executor创建。
+     *
+     * 线程获取：提交一个任务到给定Executor，由于提交的是一个死循环任务，因此可以占用这个线程。
+     * 注意：给定的Executor必须能创建足够多的线程，否则会出现异常。
      */
     private final Executor executor;
     /**
@@ -170,6 +170,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private final Promise<?> terminationFuture = new DefaultPromise<Void>(GlobalEventExecutor.INSTANCE);
 
     /**
+     * 详细注释见{@link #SingleThreadEventExecutor(EventExecutorGroup, Executor, boolean, int, RejectedExecutionHandler)}
+     *
      * Create a new instance
      *
      * @param parent            the {@link EventExecutorGroup} which is the parent of this instance and belongs to it
@@ -183,6 +185,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 详细注释见{@link #SingleThreadEventExecutor(EventExecutorGroup, Executor, boolean, int, RejectedExecutionHandler)}
+     *
      * Create a new instance
      *
      * @param parent            the {@link EventExecutorGroup} which is the parent of this instance and belongs to it
@@ -199,10 +203,13 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     /**
+     * 详细注释见{@link #SingleThreadEventExecutor(EventExecutorGroup, Executor, boolean, int, RejectedExecutionHandler)}
+     *
      * Create a new instance
      *
      * @param parent            the {@link EventExecutorGroup} which is the parent of this instance and belongs to it
      * @param executor          the {@link Executor} which will be used for executing
+     *                          用于创建线程的executor，注意：给定的Executor必须能创建足够多的线程，否则会出现异常。
      * @param addTaskWakesUp    {@code true} if and only if invocation of {@link #addTask(Runnable)} will wake up the
      *                          executor thread
      *                          当且仅当{@link #addTask(Runnable)}可以唤醒executor线程时为true。
@@ -217,7 +224,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * @param parent            the {@link EventExecutorGroup} which is the parent of this instance and belongs to it
      *                          EventExecutor所属的父节点
      * @param executor          the {@link Executor} which will be used for executing
-     *                          用于执行的executor
+     *                          用于创建线程的executor，注意：给定的Executor必须能创建足够多的线程，否则会出现异常。
+     *
      * @param addTaskWakesUp    {@code true} if and only if invocation of {@link #addTask(Runnable)} will wake up the
      *                          executor thread
      *                          当且仅当{@link #addTask(Runnable)}可以唤醒executor线程时为true。
@@ -272,7 +280,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (currentThread == null) {
             // 当前还没有新建线程，添加中断标记
             // 讲道理这是一个先检查后执行的操作，这不安全，主要是只在startThread的时候进行了检测
-            // eg: 1.检测到null 2.线程启动(未检测到中断) 3.这里设置为true  结果什么也没干
+            // eg: 1.检测到null 2.线程启动(未检测到中断) 3.这里设置为true  结果什么也没干，这个标记便失效了
             interrupted = true;
         } else {
             // 当前已新建线程，那么中断它使用的线程
@@ -378,7 +386,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * 拉取可以执行的周期性调度任务到taskQueue，这样taskQueue中就包含了所有可执行的任务，
-     * @return
+     * @return 是否至少拉取了一个任务
      */
     private boolean fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
@@ -527,6 +535,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
             runTasks ++;
 
+            // 没有实时检测是否需要退出，而是每执行64个任务检测一次
             // Check timeout every 64 tasks because nanoTime() is relatively expensive.
             // XXX: Hard-coded value - will make it configurable if it is really a problem.
             if ((runTasks & 0x3F) == 0) {

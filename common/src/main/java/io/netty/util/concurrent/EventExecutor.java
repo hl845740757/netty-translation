@@ -73,8 +73,10 @@ public interface EventExecutor extends EventExecutorGroup {
      *
      * 该方法调用必须是线程安全的，也表明了存在用于比较的Thread属性。
      *
-     * 目的：达到数据线程封闭！
-     * 某些操作和数据只允许EventLoop线程自身操作和访问，不允许其它线程访问这些数据，否则将造成线程安全问题。
+     * 目的：数据线程封闭。
+     *
+     * 某些操作和数据只允许EventLoop线程自身操作和访问，不允许其它线程直接访问这些数据，否则将造成线程安全问题。
+     *
      * 多线程的{@link EventExecutor}一定是返回false的，因为它不能提供线程封闭功能。
      * 单线程的{@link EventExecutor}才能返回true。
      *
@@ -93,12 +95,16 @@ public interface EventExecutor extends EventExecutorGroup {
     <V> Promise<V> newPromise();
 
     /**
-     * 创建一个{@link ProgressivePromise}
+     * 创建一个{@link ProgressivePromise}，可以监控任务的进度
+     *
      * Create a new {@link ProgressivePromise}.
      */
     <V> ProgressivePromise<V> newProgressivePromise();
 
     /**
+     * 创建一个{@link Future}，该future表示它关联的任务早已正常完成。因此{@link Future#isSuccess()}总是返回true。
+     * 所有添加到该future上的{@link FutureListener}都会立即被通知。并且该future上的所有阻塞方法会立即返回而不会阻塞。
+     *
      * Create a new {@link Future} which is marked as succeeded already. So {@link Future#isSuccess()}
      * will return {@code true}. All {@link FutureListener} added to it will be notified directly. Also
      * every call of blocking methods will just return without blocking.
@@ -106,6 +112,9 @@ public interface EventExecutor extends EventExecutorGroup {
     <V> Future<V> newSucceededFuture(V result);
 
     /**
+     * 创建一个{@link Future}，该future表示它关联的任务早已失败。因此{@link Future#isSuccess()}总是返回false。
+     * 所有添加到该future上的{@link FutureListener}都会立即被通知。并且该future上的所有阻塞方法会立即返回而不会阻塞。*
+     *
      * Create a new {@link Future} which is marked as failed already. So {@link Future#isSuccess()}
      * will return {@code false}. All {@link FutureListener} added to it will be notified directly. Also
      * every call of blocking methods will just return without blocking.

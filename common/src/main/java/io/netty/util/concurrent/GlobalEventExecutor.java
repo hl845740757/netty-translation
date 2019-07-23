@@ -36,8 +36,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 请注意：该Executor不可扩展用于调度大量的任务，请使用专用的线程。
  *
  * 评价：讲道理不应该继承AbstractScheduledEventExecutor，不应该支持schedule系列方法，因为GlobalEventExecutor的
- * 自动关闭实现很特殊，如果GlobalEventExecutor中存在周期性的任务，如果不手动取消这些任务，那么可能导致GlobalEventExecutor无法关闭！
- * 因此，我们使用的时候不要使用schedule系列的接口！！！否则可能导致JVM无法退出！
+ * 自动关闭实现很特殊，如果GlobalEventExecutor中存在周期性的任务，如果不手动取消这些任务，那么可能导致GlobalEventExecutor无法关闭！最终JVM也无法关闭！
+ * 因此，我们使用的时候不要使用schedule系列的接口！！！否则可能导致JVM无法退出！！
+ * (应用代码其实最好不用GlobalEventExecutor)
  *
  * Single-thread singleton {@link EventExecutor}.  It starts the thread automatically and stops it when there is no
  * task pending in the task queue for 1 second.  Please note it is not scalable to schedule large number of tasks to
@@ -83,11 +84,11 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
             new DefaultThreadFactory(DefaultThreadFactory.toPoolName(getClass()), false, Thread.NORM_PRIORITY, null);
 
     /**
-     * 线程运行逻辑，见名知意--执行提交的任务
+     * 线程运行逻辑，见名知意 -- 执行提交的任务
      */
     private final TaskRunner taskRunner = new TaskRunner();
     /**
-     * 线程启动状态，线程是否已启动，它为什么是安全的？因为是线程自身来关闭
+     * 线程启动状态，它的维护其实挺复杂。{@link #execute(Runnable)} 与 检测关闭有复杂的冲突检测机制。
      */
     private final AtomicBoolean started = new AtomicBoolean();
     /**
@@ -263,7 +264,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         // 添加到任务队列，必须在startThread之前添加到队列
         addTask(task);
 
-        // 另一个线程提交任务时需要启动EventLoop线程
+        // 另一个线程提交任务时需要启动EventLoop线程 --- 这时任务队列中可能有一个任务！
         if (!inEventLoop()) {
             startThread();
         }
@@ -271,7 +272,9 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
 
     /**
      * startThread 和 线程退出 是如何保证安全性的？
-     * 先添加任务到队列 ---------> 那么在startThread()后，如果成功将{@link #started}设置为true，那么taskQueue和{@link #scheduledTaskQueue()}中一定至少存在一个非 {@link #quietPeriodTask}任务。
+     * 先添加任务到队列 ---------> 那么在startThread()后，如果成功将{@link #started}设置为true，
+     *                          那么taskQueue和{@link #scheduledTaskQueue()}中一定至少存在一个非 {@link #quietPeriodTask}任务。
+     *
      * 在检测是否需要退出时 ------> 如果覆盖了startThread() 的值，那么一定有一个新的任务需要执行，就可以知道需要继续执行。
      */
     private void startThread() {
@@ -310,6 +313,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
     final class TaskRunner implements Runnable {
 
         /**
+         * 安全性维护见
          * @see #quietPeriodTask
          */
         @Override
