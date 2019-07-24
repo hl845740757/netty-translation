@@ -29,16 +29,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * 核心类:单线程的事件处理器，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
+ * {@link SingleThreadEventExecutor}是Netty并发实现中非常重要的一个类，该类主要负责线程的生命周期管理(创建，唤醒，销毁)，任务调度。
  *
- *
+ * 此外，它实现了{@link OrderedEventExecutor}，表示它会在单线程下有序的执行完所有的事件。
  * <li>它真正的处理所有的提交的任务或事件。</li>
  * <li>与之相对的是{@link MultithreadEventExecutorGroup}</li>
- *
- * 那为什么会觉得有点别扭呢？
- * {@link SingleThreadEventExecutor}是一个单线程的Executor,只是它的线程不是自己创建的，
- * 也不是使用线程工厂创建的，而是通过提交一个死循环的任务到被包装的Executor得到的。
- * <p>
  *
  * Abstract base class for {@link OrderedEventExecutor}'s that execute all its submitted tasks in a single thread.
  *
@@ -117,12 +112,13 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     /**
      * 依赖的{@link Executor},线程由executor创建。
      *
-     * 线程获取：提交一个任务到给定Executor，由于提交的是一个死循环任务，因此可以占用这个线程。
+     * 线程获取：提交一个任务到给定Executor，由于提交的是一个死循环任务，因此可以占用这个线程，阅读的时候可能觉得有点别扭。
      * 注意：给定的Executor必须能创建足够多的线程，否则会出现异常。
      */
     private final Executor executor;
     /**
-     * 是否被中断
+     * 是否有中断请求.
+     * 就当前版本来看，是有点小bug的。
      */
     private volatile boolean interrupted;
     /**
@@ -166,7 +162,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private volatile long gracefulShutdownTimeout;
     /** 进入安静期的开始时间 */
     private long gracefulShutdownStartTime;
-
+    /** 终止状态future */
     private final Promise<?> terminationFuture = new DefaultPromise<Void>(GlobalEventExecutor.INSTANCE);
 
     /**
@@ -386,7 +382,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     /**
      * 拉取可以执行的周期性调度任务到taskQueue，这样taskQueue中就包含了所有可执行的任务，
-     * @return 是否至少拉取了一个任务
+     * @return taskQueue是否还有剩余空间
      */
     private boolean fetchFromScheduledTaskQueue() {
         long nanoTime = AbstractScheduledEventExecutor.nanoTime();
