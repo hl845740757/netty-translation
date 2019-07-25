@@ -135,7 +135,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     /**
      * 当且仅当{@link #addTask(Runnable)}能唤醒executor线程的时候，为true。
      * Q:什么意思呢？
-     * A:线程可能阻塞在taskQueue上等待任务，这种情况下，添加一个任务可以唤醒线程，但是线程也可能阻塞在其它地方！
+     * A:线程可能阻塞在taskQueue上（等待任务），这种情况下，添加一个任务可以唤醒线程，但是线程也可能阻塞在其它地方！
      * 当阻塞在其它地方时，添加一个任务到taskQueue并不能唤醒线程，这时子类需要实现自己的唤醒机制。
      */
     private final boolean addTaskWakesUp;
@@ -158,7 +158,9 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     @SuppressWarnings({ "FieldMayBeFinal", "unused" })
     private volatile int state = ST_NOT_STARTED;
 
+    /** 安静期最小时长 */
     private volatile long gracefulShutdownQuietPeriod;
+    /** 安静期的最大时长 */
     private volatile long gracefulShutdownTimeout;
     /** 进入安静期的开始时间 */
     private long gracefulShutdownStartTime;
@@ -798,7 +800,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 switch (oldState) {
                     case ST_NOT_STARTED:
                     case ST_STARTED:
-                    case ST_SHUTTING_DOWN:
+                    case ST_SHUTTING_DOWN: // 这里仍然可能是SHUTTING_DOWN
                         newState = ST_SHUTDOWN;
                         break;
                     default:
@@ -847,18 +849,22 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
             throw new IllegalStateException("must be invoked from an event loop");
         }
 
+        // 取消所有的周期性调度任务
         cancelScheduledTasks();
 
+        // 还未初始化安静期的开始时间
         if (gracefulShutdownStartTime == 0) {
             gracefulShutdownStartTime = ScheduledFutureTask.nanoTime();
         }
 
         if (runAllTasks() || runShutdownHooks()) {
+            // 如果执行了任务或关闭钩子，则可能需要唤醒
             if (isShutdown()) {
                 // Executor shut down - no new tasks anymore.
                 return true;
             }
 
+            // 安静期为0，立即关闭
             // There were tasks in the queue. Wait a little bit more until no tasks are queued for the quiet period or
             // terminate if the quiet period is 0.
             // See https://github.com/netty/netty/issues/4241
@@ -871,14 +877,17 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
         final long nanoTime = ScheduledFutureTask.nanoTime();
 
+        // 没有执行新任务时，如果已进入关闭状态或安静期超时，则可以立即退出
         if (isShutdown() || nanoTime - gracefulShutdownStartTime > gracefulShutdownTimeout) {
             return true;
         }
 
+        // 还未到安静期，尝试唤醒线程，避免线程take超时
         if (nanoTime - lastExecutionTime <= gracefulShutdownQuietPeriod) {
             // Check if any tasks were added to the queue every 100ms.
             // TODO: Change the behavior of takeTask() so that it returns on timeout.
             wakeup(true);
+            // sleep一会儿，避免在安静期内不停的插入任务，这个间隔也不好确定啊。 太长不能及时响应任务，太短老是干无用功。
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
@@ -1136,6 +1145,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
                             // 标记为已进入终止状态
                             STATE_UPDATER.set(SingleThreadEventExecutor.this, ST_TERMINATED);
+                            // 释放信号量，使得等待终止的线程能够醒来
                             threadLock.release();
                             if (!taskQueue.isEmpty()) {
                                 if (logger.isWarnEnabled()) {
