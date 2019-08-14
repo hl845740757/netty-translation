@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
- * 无序的基于线程池的EventExecutor，
+ * 无序的基于线程池的EventExecutor，没有研究它，感觉一般都不会使用它。
  *
  * {@link EventExecutor} implementation which makes no guarantees about the ordering of task execution that
  * are submitted because there may be multiple threads executing these tasks.

@@ -42,6 +42,8 @@ public final class RejectedExecutionHandlers {
     }
 
     /**
+     * 退避式重试算法。
+     *
      * Tries to backoff when the task can not be added due restrictions for an configured amount of time. This
      * is only done if the task was added from outside of the event loop which means
      * {@link EventExecutor#inEventLoop()} returns {@code false}.

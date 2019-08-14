@@ -18,14 +18,14 @@ package io.netty.channel;
 import io.netty.util.concurrent.OrderedEventExecutor;
 
 /**
- * EventLoop是一个特殊的{@link io.netty.util.concurrent.EventExecutor},
- * 它只有单个线程，且是事件循环的运行模式。
+ * Netty中的事件循环抽象类。
+ * 它实现了{@link OrderedEventExecutor}，那么表明它是单线程的（事件循环架构，不是单线程的将没有意义）。
  *
- * {@link EventLoop}将会处理注册到它上面的{@link Channel}的所有IO操作。
+ * {@link EventLoop}将会处理注册到它上面的{@link Channel}的所有IO操作，一个{@link EventLoop}在其生命周期中，
+ * 只会绑定在同一个线程上。
  *
- * 一个{@link EventLoop}在其生命周期中，只会绑定在同一个线程上。
- *
- * 它继承EventLoopGroup的必要性是因为它可以代表EventLoopGroup绑定到Bootstrap。
+ * 它继承EventLoopGroup的必要性是因为它可以代表EventLoopGroup绑定到Bootstrap。在使用Netty的时候，如果新创建的channel
+ * 和旧的channel之间有数据交互，那么使用既有channel的eventLoop创建channel，将可以消除潜在的数据同步，有更好的性能。
  *
  * Will handle all the I/O operations for a {@link Channel} once registered.
  *

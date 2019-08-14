@@ -35,10 +35,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * 一个单线程的{@link EventExecutor}。它会自动的启动和停止它的线程当1秒之内没有任务填充到它的任务队列时。
  * 请注意：该Executor不可扩展用于调度大量的任务，请使用专用的线程。
  *
- * 评价：讲道理不应该继承AbstractScheduledEventExecutor，不应该支持schedule系列方法，因为GlobalEventExecutor的
- * 自动关闭实现很特殊，如果GlobalEventExecutor中存在周期性的任务，如果不手动取消这些任务，那么可能导致GlobalEventExecutor无法关闭！最终JVM也无法关闭！
- * 因此，我们使用的时候不要使用schedule系列的接口！！！否则可能导致JVM无法退出！！
- * (应用代码其实最好不用GlobalEventExecutor)
+ * 评价：个人觉得不应该继承AbstractScheduledEventExecutor，不应该支持schedule系列方法，因为GlobalEventExecutor的自动关闭实现很特殊，
+ * 如果GlobalEventExecutor中存在周期性的任务，如果不手动取消这些任务，那么可能导致GlobalEventExecutor无法关闭！最终JVM也无法关闭！
+ * 因此，我们使用的时候不要使用schedule系列的接口！！！否则可能导致JVM无法退出！！(应用代码其实最好不要使用GlobalEventExecutor)
+ * 个人觉得代理JDK的{@link java.util.concurrent.ThreadPoolExecutor}，创建单线程的线程池更加安全，实现也很简单。
+ * {@link java.util.concurrent.ThreadPoolExecutor#allowCoreThreadTimeOut(boolean)} 允许核心线程自动关闭即可。
  *
  * Single-thread singleton {@link EventExecutor}.  It starts the thread automatically and stops it when there is no
  * task pending in the task queue for 1 second.  Please note it is not scalable to schedule large number of tasks to
@@ -105,6 +106,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
 
     /**
      * 从taskQueue中取出下一个执行的任务，如果当前没有任务存在，则会阻塞。
+     * (和SingleThreadEventExecutor一个样)
      *
      * Take the next {@link Runnable} from the task queue and so will block if no task is currently present.
      *
@@ -115,7 +117,7 @@ public final class GlobalEventExecutor extends AbstractScheduledEventExecutor {
         // 注意 taskQueue 中包含的任务，否则会看懵逼
         BlockingQueue<Runnable> taskQueue = this.taskQueue;
         for (;;) {
-            // 查看是否有待执行的周期性调度的任务，如果有的话，不可以无限制的在taskQueue上等待 --- 填充quietPeriodTask的目的就在这里了。
+            // 查看是否有待执行的周期性调度的任务，如果有的话，不可以无限制的在taskQueue上等待 --- quietPeriodTask有这个效果。
             ScheduledFutureTask<?> scheduledTask = peekScheduledTask();
             if (scheduledTask == null) {
                 // 当前无等待调度的任务，因此可以采用take，阻塞直到taskQueue中提交新任务。

@@ -59,9 +59,6 @@ public class DefaultEventExecutorGroup extends MultithreadEventExecutorGroup {
 
     /**
      * 它本身是DefaultEventExecutor的容器，因此返回的就是DefaultEventExecutor实力。
-     * @param executor
-     * @param args
-     * @return
      * @throws Exception
      */
     @Override

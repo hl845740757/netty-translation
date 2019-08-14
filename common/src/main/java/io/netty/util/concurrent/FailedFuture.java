@@ -18,7 +18,7 @@ package io.netty.util.concurrent;
 import io.netty.util.internal.PlatformDependent;
 
 /**
- * 和{@link SucceededFuture}相对应。表示Future对应的操作早已失败。
+ * 和{@link SucceededFuture}相对应。表示Future对应的操作早已失败，添加的监听器将会立即被通知。
  * 推荐使用{@link EventExecutor#newFailedFuture(Throwable)}代替构造方法创建该Future.
  *
  * The {@link CompleteFuture} which is failed already.  It is
@@ -27,6 +27,9 @@ import io.netty.util.internal.PlatformDependent;
  */
 public final class FailedFuture<V> extends CompleteFuture<V> {
 
+    /**
+     * 导致任务失败的原因
+     */
     private final Throwable cause;
 
     /**

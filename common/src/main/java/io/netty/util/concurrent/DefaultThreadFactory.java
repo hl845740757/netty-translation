@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DefaultThreadFactory implements ThreadFactory {
     /**
-     * 全局线程池id，下一个线程池的线程工厂的id
+     * 全局线程池id，下一个线程池的线程工厂的id，避免name相同时的冲突
      */
     private static final AtomicInteger poolId = new AtomicInteger();
 
@@ -38,9 +38,9 @@ public class DefaultThreadFactory implements ThreadFactory {
      */
     private final AtomicInteger nextId = new AtomicInteger();
     /**
-     * 线程名字前缀
+     * 线程名字前缀（说实话这个名字规则不太好...）
      * {@code
-     * prefix = poolName + '-' + poolId.incrementAndGet() + '-';
+     *      prefix = poolName + '-' + poolId.incrementAndGet() + '-';
      * }
      */
     private final String prefix;

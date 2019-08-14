@@ -23,26 +23,21 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * EventExecutorGroup是事件执行器组，同时是是一种特殊的支持任务调度的执行服务。
+ * EventExecutorGroup是事件执行器组，同时是一种特殊的支持任务调度的执行服务。
  *
  * {@link EventExecutorGroup} 有两个作用：
- * 1.通过它的 {@link #next()} 方法提供 {@link EventExecutor}
+ * 1. 通过它的 {@link #next()} 方法提供 {@link EventExecutor}
  * 2. 此外，还负责 {@link EventExecutor} 的生命周期，允许使用全局统一的方式关闭他们。--- fashion(时尚，方法，方式)
  *
- * 总的来说：它并不直接处理用户请求，而是将请求转交给它所持有的执行单元。它管理它持有的执行单元的生命周期。
- * 它代表的是一组线程服务的高级封装。
+ * 总的来说：它是一组线程服务的高级封装，它并不直接处理用户请求，而是将请求转交给它所持有的执行单元。它管理它持有的执行单元的生命周期。
  *
  * EventExecutorGroup是Netty中的事件服务(事件处理器你)的顶层接口。
- * Netty中从 EventExecutor 渐渐地演化到 EventLoop，赋予它更明确的意义。(归纳与演进)
- *
- * Netty是异步的，是基于事件的，它需要不停的处理各种各样的事件，因此定义了EventExecutor。
- * 而Netty又在此基础上实现了事件循环，即：EventLoop.
  *
  * PS:
  * EventExecutorGroup 与 EventExecutor 之间的关系就是容器与容器内的元素这样的关系。
  * 可以看做是设计模式中的组合模式的，EventExecutorGroup 既是顶层的 Component，也是容器节点，而EventExecutor是叶子节点。
  *
- * 在Netty的设计中：带Group/Multi的是多线程(容器)，而不带的基本都是单线程(执行单元)。
+ * 在Netty的设计中：带Group/Multi的是线程(容器)，而不带的基本都是单线程(执行单元)。
  * {@link EventExecutorGroup}就是多线程的顶层接口，{@link EventExecutor}就是单线程的顶层接口。
  *
  * The {@link EventExecutorGroup} is responsible for providing the {@link EventExecutor}'s to use
@@ -55,7 +50,8 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     /**
      * 分配下一个执行任务的{@link EventExecutor}。
      * {@link EventExecutorGroup}管理着一组{@link EventExecutor}，由它们真正的执行任务(请求)。
-     * 在返回{@link EventExecutor}时需要尽可能的负载均衡。
+     * 1. 在返回{@link EventExecutor}时需要尽可能的负载均衡。
+     * 2. 该方法需要保证线程安全，因为可能被多线程调用。
      *
      * (该方法比较重要，因此我挪动到最上面)
      *
@@ -65,8 +61,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
 
     /**
      * 查询{@link EventExecutorGroup}是否处于正在关闭状态。
-     *
-     * 如果该{@link EventExecutorGroup}管理的所有{@link EventExecutor}正在优雅的关闭或已关闭则返回true
+     * 如果该{@link EventExecutorGroup}管理的所有{@link EventExecutor}正在优雅地关闭或已关闭则返回true
      *
      * Returns {@code true} if and only if all {@link EventExecutor}s managed by this {@link EventExecutorGroup}
      * are being {@linkplain #shutdownGracefully() shut down gracefully} or was {@linkplain #isShutdown() shut down}.
@@ -85,9 +80,11 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     /**
      * 通知当前{@link EventExecutorGroup} 关闭。
      * 一旦该方法被调用，{@link #isShuttingDown()}将开始返回true,并且当前 executor准备开始关闭自己。
-     * 和{@link #shutdown()}方法不同的是，优雅的关闭将保证在关闭前的安静期没有任务提交。
-     * 如果在安静期提交了一个任务，那么它一定会接受它并重新进入安静期。
-     * (也就是说不推荐使用 {@link ExecutorService#shutdown()} 和 {@link ExecutorService#shutdownNow()}方法。
+     * 和{@link #shutdown()}方法不同的是，优雅的关闭将保证在关闭前的安静期没有任务提交（可参考JDKd ThreadPollExecutor中的idle参数），
+     * 如果在安静期提交了一个任务，那么它一定会接受它并重新进入安静期（这也导致了可能长时间无法关闭，甚至关不掉的问题）。
+     * 如果在在安静期内没有任务提交，那么当安静期结束时，真正的关闭。
+     *
+     * (Netty并不推荐使用 {@link ExecutorService#shutdown()} 和 {@link ExecutorService#shutdownNow()}方法。
      *
      * Signals this executor that the caller wants the executor to be shut down.  Once this method is called,
      * {@link #isShuttingDown()} starts to return {@code true}, and the executor prepares to shut itself down.
@@ -108,7 +105,8 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
 
     /**
      * 返回等待线程终止的future。
-     * 返回的{@link Future}会在该Group管理的所有{@link EventExecutor}终止后收到一个通知
+     * 返回的{@link Future}会在该Group管理的所有{@link EventExecutor}终止后收到一个通知。如果{@link EventExecutorGroup}早已关闭，
+     * 那么在该Future上添加的监听器将立即收到通知。
      *
      * Returns the {@link Future} which is notified when all {@link EventExecutor}s managed by this
      * {@link EventExecutorGroup} have been terminated.
@@ -137,6 +135,7 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
     @Override
     Iterator<EventExecutor> iterator();
 
+    // ----------------------------- 重载这些方法，是为了返回netty自身实现的Future --------------------------------
     @Override
     Future<?> submit(Runnable task);
 

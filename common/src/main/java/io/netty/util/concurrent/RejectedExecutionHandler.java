@@ -16,6 +16,7 @@
 package io.netty.util.concurrent;
 
 /**
+ * 任务拒绝策略。
  * Similar to {@link java.util.concurrent.RejectedExecutionHandler} but specific to {@link SingleThreadEventExecutor}.
  */
 public interface RejectedExecutionHandler {

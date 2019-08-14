@@ -20,6 +20,8 @@ import java.util.concurrent.RunnableFuture;
 
 /**
  * 该类的含义可对比{@link java.util.concurrent.FutureTask}
+ * 它既是Promise，也是Task，所有的结果都应该由自己赋值，不允许外部进行赋值操作。
+ *
  * @param <V>
  */
 class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
@@ -29,7 +31,8 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
     }
 
     /**
-     * 这个和Executors中的RunnableAdapter基本一样
+     * 这个和Executors中的RunnableAdapter基本一样。
+     * {@link java.util.concurrent.Executors#callable(Runnable)}
      * @param <T>
      */
     private static final class RunnableAdapter<T> implements Callable<T> {
@@ -86,11 +89,15 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
     @Override
     public void run() {
         try {
+            // 标记为不可取消(因为PromiseTask本身并不清楚任务内部是什么逻辑，如果盲目的支持中断，可能导致需要原子执行的任务出现异常)
             if (setUncancellableInternal()) {
+                // 执行任务逻辑
                 V result = task.call();
+                // 标记为成功
                 setSuccessInternal(result);
             }
         } catch (Throwable e) {
+            // 执行出现异常，标记为失败
             setFailureInternal(e);
         }
     }
@@ -100,8 +107,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * {@link PromiseTask}的结果由自己赋值，因此外部赋值抛出异常
-     * @param cause
-     * @return
      */
     @Override
     public final Promise<V> setFailure(Throwable cause) {
@@ -110,8 +115,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * 这是内部赋值失败的方法，不是对外的
-     * @param cause
-     * @return
      */
     protected final Promise<V> setFailureInternal(Throwable cause) {
         super.setFailure(cause);
@@ -120,8 +123,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * {@link PromiseTask}的结果由自己赋值，因此外部赋值总是失败
-     * @param cause
-     * @return
      */
     @Override
     public final boolean tryFailure(Throwable cause) {
@@ -130,8 +131,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * 内部赋值失败的方法
-     * @param cause
-     * @return
      */
     protected final boolean tryFailureInternal(Throwable cause) {
         return super.tryFailure(cause);
@@ -139,8 +138,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * {@link PromiseTask}的结果由自己赋值，因此外部赋值抛出异常。
-     * @param result
-     * @return
      */
     @Override
     public final Promise<V> setSuccess(V result) {
@@ -149,8 +146,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * 内部赋值成功的方法
-     * @param result
-     * @return
      */
     protected final Promise<V> setSuccessInternal(V result) {
         super.setSuccess(result);
@@ -159,8 +154,6 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * {@link PromiseTask}的结果由自己赋值，因此外部赋值总是失败
-     * @param result
-     * @return
      */
     @Override
     public final boolean trySuccess(V result) {
@@ -169,13 +162,14 @@ class PromiseTask<V> extends DefaultPromise<V> implements RunnableFuture<V> {
 
     /**
      * 内部尝试赋值成功的方法
-     * @param result
-     * @return
      */
     protected final boolean trySuccessInternal(V result) {
         return super.trySuccess(result);
     }
 
+    /**
+     * 任务只有自己才能设置为不可取消，外部不可以进行设置
+     */
     @Override
     public final boolean setUncancellable() {
         throw new IllegalStateException();

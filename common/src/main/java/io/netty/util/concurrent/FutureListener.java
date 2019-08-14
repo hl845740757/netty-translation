@@ -18,6 +18,7 @@ package io.netty.util.concurrent;
 
 /**
  * {@link FutureListener}是{@link GenericFutureListener}的子类，为了方便使用，隐藏了泛型参数。
+ * 用于监听{@link Future}上的执行结果。
  *
  * A subtype of {@link GenericFutureListener} that hides type parameter for convenience.
  * <pre>
@@ -27,4 +28,6 @@ package io.netty.util.concurrent;
  * });
  * </pre>
  */
-public interface FutureListener<V> extends GenericFutureListener<Future<V>> { }
+public interface FutureListener<V> extends GenericFutureListener<Future<V>> {
+
+}

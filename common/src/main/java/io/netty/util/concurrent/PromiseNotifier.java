@@ -22,8 +22,7 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
- * Promise统治者。它持有其它的{@link Promise}，并在操作完成的时候通知其他的{@link Promise}。
- * 当多个promise关联同一个任务的时候可能会有用。
+ * Promise通知器。它持有其它的{@link Promise}，并在操作完成的时候通知其他的{@link Promise}(同步结果到其它promise)， 当多个promise关联同一个任务的时候可能会有用。
  *
  * {@link GenericFutureListener} implementation which takes other {@link Promise}s
  * and notifies them on completion.
@@ -34,7 +33,9 @@ import static io.netty.util.internal.ObjectUtil.checkNotNull;
 public class PromiseNotifier<V, F extends Future<V>> implements GenericFutureListener<F> {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PromiseNotifier.class);
+    /** 它管理的promise */
     private final Promise<? super V>[] promises;
+    /** 通知失败是否记录日志 */
     private final boolean logNotifyFailure;
 
     /**
@@ -61,23 +62,28 @@ public class PromiseNotifier<V, F extends Future<V>> implements GenericFutureLis
                 throw new IllegalArgumentException("promises contains null Promise");
             }
         }
+        // 进行保护性拷贝，避免被修改
         this.promises = promises.clone();
         this.logNotifyFailure = logNotifyFailure;
     }
 
     @Override
     public void operationComplete(F future) throws Exception {
+        // 关联的操作已完成，将结果同步到管理的所有promise
         InternalLogger internalLogger = logNotifyFailure ? logger : null;
         if (future.isSuccess()) {
+            // 成功
             V result = future.get();
             for (Promise<? super V> p: promises) {
                 PromiseNotificationUtil.trySuccess(p, result, internalLogger);
             }
         } else if (future.isCancelled()) {
+            // 被取消
             for (Promise<? super V> p: promises) {
                 PromiseNotificationUtil.tryCancel(p, internalLogger);
             }
         } else {
+            // 执行失败(出现异常)
             Throwable cause = future.cause();
             for (Promise<? super V> p: promises) {
                 PromiseNotificationUtil.tryFailure(p, cause, internalLogger);

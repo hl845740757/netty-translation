@@ -77,13 +77,13 @@ public class SocketConnectionAttemptTest extends AbstractClientSocketTest {
     }
 
     private static void testConnectRefused0(Bootstrap cb, boolean halfClosure) throws Throwable {
+        final Promise<Error> errorPromise = GlobalEventExecutor.INSTANCE.newPromise();
         ChannelHandler handler = new ChannelInboundHandlerAdapter() {
             @Override
             public void channelActive(ChannelHandlerContext ctx) throws Exception {
                 errorPromise.setFailure(new AssertionError("should have never been called"));
             }
         };
-        final Promise<Error> errorPromise = GlobalEventExecutor.INSTANCE.newPromise();
 
         cb.handler(handler);
         cb.option(ChannelOption.ALLOW_HALF_CLOSURE, halfClosure);

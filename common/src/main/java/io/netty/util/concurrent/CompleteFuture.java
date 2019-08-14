@@ -19,7 +19,7 @@ package io.netty.util.concurrent;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 一个{@link Future}的骨架(模板)实现，它表示该 {@link Future}对应的操作早已执行完毕。
+ * 一个{@link Future}的骨架(模板)实现，它表示该 {@link Future}对应的操作早已执行完毕，添加的监听器将会立即被通知。
  * (完成分为：失败，取消，成功)
  *
  * 它的方法都比较简单，不做详细的解释了。
@@ -52,14 +52,13 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     /**
      * 由于早已执行完毕，因此加入时就通知执行完毕，而不用存储起来
-     * @param listener
-     * @return
      */
     @Override
     public Future<V> addListener(GenericFutureListener<? extends Future<? super V>> listener) {
         if (listener == null) {
             throw new NullPointerException("listener");
         }
+        // 直接进行通知
         DefaultPromise.notifyListener(executor(), this, listener);
         return this;
     }
@@ -69,6 +68,7 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
         if (listeners == null) {
             throw new NullPointerException("listeners");
         }
+        // 直接进行通知
         for (GenericFutureListener<? extends Future<? super V>> l: listeners) {
             if (l == null) {
                 break;
@@ -80,8 +80,6 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     /**
      * 由于早已执行完毕，添加时并没有真正添加，因此不需要移除
-     * @param listener
-     * @return
      */
     @Override
     public Future<V> removeListener(GenericFutureListener<? extends Future<? super V>> listener) {
@@ -97,7 +95,7 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     /**
      * 由于早已执行完毕，不需要等待
-     * @return
+     * （但是检测了中断，我个人觉得可能不需要检测中断，到底要不要检测中断并没有标准。。。）
      * @throws InterruptedException
      */
     @Override
@@ -118,7 +116,7 @@ public abstract class CompleteFuture<V> extends AbstractFuture<V> {
 
     /**
      * 由于早已执行完毕，不需要同步操作，直接返回
-     * @return
+     * @return this
      * @throws InterruptedException
      */
     @Override

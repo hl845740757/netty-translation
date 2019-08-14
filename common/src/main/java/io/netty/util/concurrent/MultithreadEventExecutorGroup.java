@@ -26,8 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * <p>
- *  用多线程同时处理任务的{@link EventExecutorGroup}的基本抽象实现。
- *  XXXGroup表示的是它是一个容器节点。
+ *  用多线程同时处理任务的{@link EventExecutorGroup}的基本抽象实现。它是一个很重要的实现。
  * <p>
  *  它的实现逻辑也很简单，它持有多个{@link EventExecutor}，本身不负责业务/事件的处理，
  *  而是单纯将任务分派给它的子节点。然后负责管理子节点的生命周期即可。
@@ -105,13 +104,13 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 
         // 如果未指定Executor 则创建的是无界线程池(每一个任务创建一个线程)。
         // 这个一定要注意，在Netty中是安全的，它用于真正的创建线程。必须能保证创建足够的线程。
-        // 线程数由执行IO监听的线程数决定，也就是EventLoop的个数。每一个EventLoop可看做一个死循环的Runnable
+        // 线程数由执行IO的线程数决定，也就是EventLoop的个数(nThreads)。每一个EventLoop可看做一个死循环的Runnable
 
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
 
-        // 创建指定数目的线程，(其实就是创建指定数目的EventExecutor，只不过是更高级的封装)
+        // 创建指定数目的Child，其实就是线程
         children = new EventExecutor[nThreads];
         for (int i = 0; i < nThreads; i ++) {
             // 当前索引的child是否创建成功
@@ -178,6 +177,9 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         return new DefaultThreadFactory(getClass());
     }
 
+    /**
+     * 将算法委托给{@link #chooser}，可以实现自定义的选择策略。
+     */
     @Override
     public EventExecutor next() {
         return chooser.next();
@@ -189,6 +191,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     }
 
     /**
+     * 返回包含的executor数，其实也就是child数量，也是线程的数量。
+     *
      * Return the number of {@link EventExecutor} this implementation uses. This number is the maps
      * 1:1 to the threads it use.
      */
@@ -197,10 +201,11 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     }
 
     /**
-     * 创建一个新的EventExecutor，稍后可以被后面的{@link #next()}方法访问。
-     * 将为服务于当前{@link MultithreadEventExecutorGroup}的每一个线程调用该方法。
-     *
+     * 创建一个新的EventExecutor，稍后可以被后面的{@link #next()}方法访问。*
      * 其实就是创建线程，只不过是将线程封装为{@link EventExecutor}。
+     *
+     * @apiNote
+     * 注意：这里是超类构建的时候调用的，此时子类属性都是null，因此newChild需要的数据必须在args中，使用子类的属性会导致NPE。
      *
      * Create a new EventExecutor which will later then accessible via the {@link #next()}  method. This method will be
      * called for each thread that will serve this {@link MultithreadEventExecutorGroup}.
@@ -234,8 +239,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     }
 
     /**
-     * 是否正在关闭。 -------- 两阶段终止模式
-     * @return
+     * 是否正在关闭。
+     * @return 所有节点都至少进入shuttingdown状态才返回true
      */
     @Override
     public boolean isShuttingDown() {
@@ -251,7 +256,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 
     /**
      * 是否已进入关闭状态
-     * @return
+     * @return 所有节点都至少进入shutdown状态才返回true
      */
     @Override
     public boolean isShutdown() {
@@ -267,7 +272,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 
     /**
      * 是否已进入终止状态
-     * @return
+     * @return 所有节点都进入terminated状态才返回true
      */
     @Override
     public boolean isTerminated() {
@@ -283,14 +288,15 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
 
     /**
      * 有时限的等待EventExecutorGroup关闭。
+     *
      * @param timeout 时间数值
      * @param unit 时间单位
-     * @return
+     * @return 如果它包含的所有子节点都进入了终止状态则返回true。
      * @throws InterruptedException
      */
     @Override
-    public boolean awaitTermination(long timeout, TimeUnit unit)
-            throws InterruptedException {
+    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        // 虽然这里能看明白，但是：为何不直接在{@link #terminationFuture}上await？？？
         long deadline = System.nanoTime() + unit.toNanos(timeout);
         loop: for (EventExecutor l: children) {
             for (;;) {
@@ -305,7 +311,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 }
             }
         }
-        // 可能是超时了，可能时限内成功终止了
+        // 可能是超时了，可能时限内成功终止了，最后再尝试一次
         return isTerminated();
     }
 }

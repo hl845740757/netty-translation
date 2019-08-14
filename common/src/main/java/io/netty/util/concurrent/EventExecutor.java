@@ -18,16 +18,9 @@ package io.netty.util.concurrent;
 /**
  * {@link EventExecutor}是{@link EventExecutorGroup}中的成员，它是真正执行事件处理的单元。
  * 它继承自{@link EventExecutorGroup}表示它可以作为一个只有单个成员的{@link EventExecutorGroup}进行服务。
- * 它代表着一个线程服务的高级封装，一个{@link EventExecutor}可以有任意个数的线程。
- * {@link SingleThreadEventExecutor}
- * {@link UnorderedThreadPoolEventExecutor}将{@link EventExecutor}。
  *
- * 事件执行器，它是一种特殊的{@link EventExecutorGroup},其作用就是主处理事件。
  * 它附带了一些简单方法去查看一个线程是否运行在EventLoop中。
  * 此外，它继承了{@link EventExecutorGroup}并且提供了访问{@link EventExecutorGroup}的通用方法。
- *
- * 在Netty的设计中：带Group/Multi的是多线程，而不带的基本都是单线程。
- * {@link EventExecutorGroup}就是多线程的顶层接口，{@link EventExecutor}就是单线程的顶层接口。
  *
  * handy：简单
  *
@@ -41,8 +34,7 @@ public interface EventExecutor extends EventExecutorGroup {
 
     /**
      * 返回它自身的一个引用。
-     * {@link EventExecutor}表示持有一个{@link EventExecutor}的{@link EventExecutorGroup}，
-     * 因此它总是返回自身进行服务。
+     * {@link EventExecutor}表示持有一个{@link EventExecutor}的{@link EventExecutorGroup}， 因此它总是返回自身进行服务。
      *
      * Returns a reference to itself.
      */
@@ -66,19 +58,14 @@ public interface EventExecutor extends EventExecutorGroup {
     boolean inEventLoop();
 
     /**
-     * 查询给定的线程是否是EventLoop形式的线程。
-     * 它的含义包含两层：
-     * 1.{@link EventExecutor}是否是单线程的，
-     * 2.给定的{@link Thread}是否就是{@link EventExecutor}持有的那个线程。
-     *
-     * 该方法调用必须是线程安全的，也表明了存在用于比较的Thread属性。
+     * 查询给定的线程是否是EventLoop使用的线程。
+     * 该方法实现必须是线程安全的，也表明了存在用于比较的Thread属性。
      *
      * 目的：数据线程封闭。
-     *
      * 某些操作和数据只允许EventLoop线程自身操作和访问，不允许其它线程直接访问这些数据，否则将造成线程安全问题。
      *
      * 多线程的{@link EventExecutor}一定是返回false的，因为它不能提供线程封闭功能。
-     * 单线程的{@link EventExecutor}才能返回true。
+     * 单线程的{@link EventExecutor}才可能返回true。
      *
      * Return {@code true} if the given {@link Thread} is executed in the event loop,
      * {@code false} otherwise.

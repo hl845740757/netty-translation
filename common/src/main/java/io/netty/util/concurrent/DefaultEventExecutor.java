@@ -68,10 +68,11 @@ public final class DefaultEventExecutor extends SingleThreadEventExecutor {
         for (;;) {
             Runnable task = takeTask();
             if (task != null) {
+                // 成功取出一个任务，进行执行。注意：并没有调用safeExecute，因此出现异常会退出循环
                 task.run();
                 updateLastExecutionTime();
             }
-
+            // 如果需要shutdown，则跳出循环，执行结束
             if (confirmShutdown()) {
                 break;
             }

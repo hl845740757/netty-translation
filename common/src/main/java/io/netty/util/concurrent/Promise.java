@@ -17,8 +17,6 @@ package io.netty.util.concurrent;
 
 /**
  * Promise模式的本质就是为Future模式提供可写功能。
- * (和FutureTask的不同在于FutureTask是内部设置结果，而Promise是外部设置结果,为外部提供接口)
- * Promise和{@link Runnable}之间是组合关系，而FutureTask和{@link Runnable}是继承关系。
  *
  * Special {@link Future} which is writable.
  */
@@ -26,7 +24,7 @@ public interface Promise<V> extends Future<V> {
 
     /**
      * 标记该Future操作成功，并且通知所有的监听者。
-     * 如果早已成功或失败，该方法将会抛出{@link IllegalStateException}异常。（即只允许调用一次）
+     * 如果该Future关联的操作早已完成，该方法将会抛出{@link IllegalStateException}异常。（即结果只允许赋值一次）
      *
      * Marks this future as a success and notifies all
      * listeners.
@@ -50,7 +48,7 @@ public interface Promise<V> extends Future<V> {
 
     /**
      * 标记该Future操作失败，并且通知所有的监听者。
-     * 如果早已成功或失败，该方法将会抛出{@link IllegalStateException}异常。
+     * 如果该Future关联的操作早已完成，该方法将会抛出{@link IllegalStateException}异常。（即结果只允许赋值一次）
      *
      * Marks this future as a failure and notifies all
      * listeners.
@@ -84,7 +82,7 @@ public interface Promise<V> extends Future<V> {
      */
     boolean setUncancellable();
 
-    // 这些返回值转换为子类型的代码 能否优雅的解决呢？泛型的话，应该会好点
+    // 重写这些方法以提供流式语法支持
 
     @Override
     Promise<V> addListener(GenericFutureListener<? extends Future<? super V>> listener);

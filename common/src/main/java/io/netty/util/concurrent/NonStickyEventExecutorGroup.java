@@ -31,6 +31,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * 这个类没研究过。
+ *
  * {@link EventExecutorGroup} which will preserve {@link Runnable} execution order but makes no guarantees about what
  * {@link EventExecutor} (and therefore {@link Thread}) will be used to execute the {@link Runnable}s.
  *

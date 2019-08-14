@@ -26,18 +26,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 可周期性调度的任务
+ * 可周期性调度的任务。
+ * {@link #getDelay(TimeUnit)}
+ *
  * @param <V> the type of value
  */
 @SuppressWarnings("ComparableImplementedButEqualsNotOverridden")
 final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFuture<V>, PriorityQueueNode {
+
     private static final AtomicLong nextTaskId = new AtomicLong();
     /**
      * 全局起始时间偏移量
      */
     private static final long START_TIME = System.nanoTime();
     /**
-     * 获取过去的纳秒数
+     * 获取过去的纳秒数（相对时间）
      * @return long
      */
     static long nanoTime() {
@@ -45,9 +48,9 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     }
 
     /**
-     * 通过延迟时间获取任务的结束时间
+     * 计算任务过期时间。
      * @param delay 任务的延迟(第一次执行的延迟)
-     * @return
+     * @return deadline 纳秒
      */
     static long deadlineNanos(long delay) {
         long deadlineNanos = nanoTime() + delay;
@@ -59,14 +62,16 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     /**
      * 下次执行的时间戳
      * （相对时间戳，相对于{@link #START_TIME}的时间戳）
+     * 它不是volatile的，导致{@link #getDelay(TimeUnit)}会出现线程安全问题(其它线程可能无法获取到真实延迟)。
+     * 不是volatile的可以提高排序顺序，减少消耗。
      */
     private long deadlineNanos;
 
     /**
-     * 0 - no repeat, —— 0表示只执行一次，
+     * 0 - no repeat, —— 0表示不重复执行，只执行一次
      * >0 - repeat at fixed rate, —— >0 表示固定频率执行，固定频率执行会尽量使得满足执行频率(比如1秒10次)，下次执行时间 = deadlineNanos + p，
-     * <0 - repeat with fixed dela —— <0 表示固定延迟执行，固定延迟着重与保持两次执行之间的间隔，而不保证频率，下次执行时间 = nanoTime() - p，
-     * 总的来说这个设定不是很方便使用。
+     * <0 - repeat with fixed delay —— <0 表示固定延迟执行，固定延迟着重与保持两次执行之间的间隔，而不保证频率，下次执行时间 = nanoTime() - p，
+     * 总的来说：这个设定很巧妙，但不是很方便使用。一定需要对调用参数进行校验，否则可能出错。
      */
     private final long periodNanos;
 
@@ -133,6 +138,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
 
     @Override
     public long getDelay(TimeUnit unit) {
+        // 注意：Netty的该实现不是线程安全的，其它线程查询该值将产生问题，不准确。
         return unit.convert(delayNanos(), TimeUnit.NANOSECONDS);
     }
 
@@ -141,7 +147,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         if (this == o) {
             return 0;
         }
-        // 先比较执行间隔，再比较id --- 用于调度排序
+        // 先比较执行间隔，再比较id --- 用于调度排序 deadline是非volatile的，可以提高性能，但是使得getDelay就有线程安全问题了。
         ScheduledFutureTask<?> that = (ScheduledFutureTask<?>) o;
         long d = deadlineNanos() - that.deadlineNanos();
         if (d < 0) {
@@ -161,7 +167,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
     public void run() {
         assert executor().inEventLoop();
         try {
-            // 只执行一次
+            // 只执行一次的任务
             if (periodNanos == 0) {
                 if (setUncancellableInternal()) {
                     V result = task.call();
@@ -176,11 +182,13 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                         long p = periodNanos;
                         if (p > 0) {
                             // 固定频率执行，固定频率执行会尽量使得满足执行频率(比如1秒10次)
+                            // - 我的timer系统中，这里使用的是while循环，因为有可能压入队列之后又需要被弹出，当然这样更标准点
                             deadlineNanos += p;
                         } else {
                             // 固定延迟执行，固定延迟着重与保持两次执行之间的间隔，而不保证频率
                             deadlineNanos = nanoTime() - p;
                         }
+                        // 任务可能在执行之后被取消，如果没有被取消，那么重新压入队列
                         if (!isCancelled()) {
                             // scheduledTaskQueue一定不会为null，因为在提交任务之前已经进行了延迟初始化。
                             // 是这样的：该任务就是从任务队列弹出的，因此走到该代码块的时候，队列一定存在。
@@ -197,6 +205,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
                 }
             }
         } catch (Throwable cause) {
+            // 一旦执行错误，结束执行
             setFailureInternal(cause);
         }
     }
@@ -215,6 +224,9 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
         return canceled;
     }
 
+    /**
+     * 取消任务，但是不从队列中移除。
+     */
     boolean cancelWithoutRemove(boolean mayInterruptIfRunning) {
         return super.cancel(mayInterruptIfRunning);
     }

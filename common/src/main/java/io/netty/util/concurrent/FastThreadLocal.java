@@ -24,9 +24,7 @@ import java.util.Set;
 
 /**
  * 一个特殊的{@link ThreadLocal}，通过{@link FastThreadLocalThread}访问可获得更高的访问性能。
- * {@link FastThreadLocal}{@link FastThreadLocalThread}逻辑较为复杂，没有细致的研究。
- *
- * (有点小疑问：netty中封装的特别多，对内存的占用也不小吧，好多的中间对象)
+ * {@link FastThreadLocal}{@link FastThreadLocalThread}逻辑较为复杂，没有细致的研究（据说和FastThread搭配性能很不错）。
  *
  * A special variant of {@link ThreadLocal} that yields higher access performance when accessed from a
  * {@link FastThreadLocalThread}.

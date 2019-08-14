@@ -28,16 +28,12 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * {@link EventExecutor}的抽象实现。
- * 它是叶子节点的顶层超类。
- *
- * 它继承了{@link AbstractExecutorService}，并实现了{@link EventExecutor}。
- * 融合了两者的语义 => AbstractEventExecutor 是一个处理事件的ExecutorService
- *
+ * {@link EventExecutor}的抽象实现，它是叶子节点的顶层超类。
  *
  * Abstract base class for {@link EventExecutor} implementations.
  */
 public abstract class AbstractEventExecutor extends AbstractExecutorService implements EventExecutor {
+
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractEventExecutor.class);
 
     /**
@@ -50,13 +46,11 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     static final long DEFAULT_SHUTDOWN_TIMEOUT = 15;
 
     /**
-     * 父节点的引用
-     * 我是一个EventExecutor，是EventExecutorGroup中的一员(是它的子节点)。
-     *
+     * 我是一个EventExecutor，可能是某个EventExecutorGroup中的一员(是它的子节点)。
      */
     private final EventExecutorGroup parent;
     /**
-     * 封装一个只包含自己的集合。方便实现跌打查询等等。
+     * 封装一个只包含自己的集合。方便实现迭代查询等等。
      */
     private final Collection<EventExecutor> selfCollection = Collections.<EventExecutor>singleton(this);
 
@@ -131,7 +125,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
         return new FailedFuture<V>(this, cause);
     }
 
-    // region 重写 AbstractExecutorService中的部分方法,返回特定的Future类型
+    // ------------------- region 重写 AbstractExecutorService中的部分方法,返回特定的Future类型 -------------------------
     @Override
     public Future<?> submit(Runnable task) {
         return (Future<?>) super.submit(task);
@@ -147,6 +141,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
         return (Future<T>) super.submit(task);
     }
 
+    // ------------------------------- 重写newTaskFor方法，以返回特定的future类型（很重要） ----------------------------------
     @Override
     protected final <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
         return new PromiseTask<T>(this, runnable, value);
@@ -159,7 +154,6 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     // endregion
 
     // region 屏蔽掉默认实现，要求子类必须复写
-    // 其实也可以直接声明为抽象方法啊，默认抛错不喜欢
     @Override
     public ScheduledFuture<?> schedule(Runnable command, long delay,
                                        TimeUnit unit) {

@@ -23,7 +23,7 @@ import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 立即执行的EventExecutor —— 调用者执行
+ * 立即执行的EventExecutor，有些地方也叫SameThreadExecutor。
  * 含义可参考{@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy}。
  * 提交的任务的线程立即执行它所提交的任务。如果{@link #execute(Runnable)}是可重入的，
  * 那么该任务将会压入队列直到原始的{@link Runnable}完成执行。
@@ -40,7 +40,11 @@ import java.util.concurrent.TimeUnit;
 public final class ImmediateEventExecutor extends AbstractEventExecutor {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(ImmediateEventExecutor.class);
     public static final ImmediateEventExecutor INSTANCE = new ImmediateEventExecutor();
+
     /**
+     * 任务队列。
+     * 必须是ThreadLocal的，因为使用ImmediateEventExecutor的时候，并不是创建一个对象，而是立即捕获当前线程进行执行。
+     * 因此要保证数据的隔离，必须是ThreadLocal的。
      * A Runnable will be queued if we are executing a Runnable. This is to prevent a {@link StackOverflowError}.
      */
     private static final FastThreadLocal<Queue<Runnable>> DELAYED_RUNNABLES = new FastThreadLocal<Queue<Runnable>>() {
@@ -49,7 +53,10 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
             return new ArrayDeque<Runnable>();
         }
     };
+
     /**
+     * 运行状态。提交第一个任务的时候进入运行状态，执行完本批次任务后进入非运行状态。
+     * 必须是ThreadLocal，理由同上。
      * Set to {@code true} if we are executing a runnable.
      */
     private static final FastThreadLocal<Boolean> RUNNING = new FastThreadLocal<Boolean>() {
@@ -59,6 +66,9 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
         }
     };
 
+    /**
+     * 因为它并没有创建新线程，而是捕获了当前线程，将当前线程伪装成为一个EventExecutor，因此也不支持关闭。
+     */
     private final Future<?> terminationFuture = new FailedFuture<Object>(
             GlobalEventExecutor.INSTANCE, new UnsupportedOperationException());
 
@@ -69,6 +79,7 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
         return true;
     }
 
+    /** 因为该EventExecutor就是基于当前线程的，因此返回true */
     @Override
     public boolean inEventLoop(Thread thread) {
         return true;
@@ -114,8 +125,9 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
             throw new NullPointerException("command");
         }
         if (!RUNNING.get()) {
-            // 如果提交任务的时候，没有正在执行的任务，则立即执行提交的任务
+            // 如果提交任务的时候，当前EventExecutor处于非活动状态，那么需要先标记为运行状态，使得当前任务执行期间提交的新任务进入队列
             RUNNING.set(true);
+            // 立即执行提交的任务
             try {
                 command.run();
             } catch (Throwable cause) {
@@ -123,11 +135,12 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
             } finally {
                 Queue<Runnable> delayedRunnables = DELAYED_RUNNABLES.get();
                 Runnable runnable;
-                // 检查该线程(任务)提交的所有任务，知道所有任务执行完毕
+                // 检查该线程(任务)提交的所有任务，直到所有任务执行完毕
                 while ((runnable = delayedRunnables.poll()) != null) {
                     try {
                         runnable.run();
                     } catch (Throwable cause) {
+                        // 必须捕获异常，使得所有任务都可以被执行
                         logger.info("Throwable caught while executing Runnable {}", runnable, cause);
                     }
                 }
@@ -158,6 +171,9 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
         @Override
         protected void checkDeadLock() {
             // No check
+            // 为何不检查死锁？
+            // 理论上也是会出现死锁可能的，但跟Netty使用该对象的情景也有关。
+            // 比如创建一个Promise之后，总是将该Promise传给另一个线程，那么也没有什么问题。
         }
     }
 

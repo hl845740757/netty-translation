@@ -26,14 +26,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 继承AbstractEventExecutor，对它的含义进一步具体化。
- * 实现了{@link java.util.concurrent.ScheduledExecutorService}中的方法，支持事件的调度处理。
+ * 实现了{@link java.util.concurrent.ScheduledExecutorService}中的方法，支持单线程下的定时任务调度。
  *
  * Abstract base class for {@link EventExecutor}s that want to support scheduling.
  */
 public abstract class AbstractScheduledEventExecutor extends AbstractEventExecutor {
     /**
-     * 默认的任务比较器
+     * 默认的任务比较器，本质是比较的下次执行时间
      */
     private static final Comparator<ScheduledFutureTask<?>> SCHEDULED_FUTURE_TASK_COMPARATOR =
             new Comparator<ScheduledFutureTask<?>>() {
@@ -44,11 +43,11 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
             };
 
     /**
-     * 可调度的任务队列，底层的实现多为优先检查周期性调度的任务，其次执行提交的普通任务。
+     * 周期性任务队列。
      *
-     * 它本身不是线程安全的，但它是线程封闭的，它只由执行任务的线程访问{@link #inEventLoop(Thread)}。
+     * 它本身不是线程安全的，但它是线程封闭的，它只由执行任务的线程访问{@link #inEventLoop(Thread)}(增加和删除)。
      * 当不是执行任务的线程时，任务不直接插入到队列，而是提交一个任务，由执行逻辑的线程插入到队列，并最终执行。
-     * 这样的好处是啥呢？没有线程安全的优先级队列，使用这种方式可以减少对锁的使用，否则需要锁整个对象。
+     * 这样的好处是啥呢？没有使用线程安全的优先级队列，使用这种方式可以减少对锁的使用，否则需要锁整个对象。
      */
     PriorityQueue<ScheduledFutureTask<?>> scheduledTaskQueue;
 
@@ -60,7 +59,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
-     * 获取过去的纳秒数
+     * 获取过去的纳秒数(这是个相对时间)
      * @return long
      */
     protected static long nanoTime() {
@@ -86,7 +85,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
-     * 取消当前线程的所有任务。
+     * (线程退出前)取消当前线程的所有周期性任务。
      * (必须保证当前线程是EventExecutor中的线程)
      *
      * Cancel all scheduled tasks.
@@ -100,9 +99,9 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
             return;
         }
 
-        final ScheduledFutureTask<?>[] scheduledTasks =
-                scheduledTaskQueue.toArray(new ScheduledFutureTask<?>[0]);
+        final ScheduledFutureTask<?>[] scheduledTasks = scheduledTaskQueue.toArray(new ScheduledFutureTask<?>[0]);
 
+        // 这里取消所有的任务执行，但是并没有立即删除，而是稍后统一删除(更快)
         for (ScheduledFutureTask<?> task: scheduledTasks) {
             task.cancelWithoutRemove(false);
         }
@@ -111,7 +110,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
-     * 弹出一个已提交的任务
+     * 尝试弹出一个当前可执行的任务。
      *
      * @see #pollScheduledTask(long)
      */
@@ -120,7 +119,8 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
-     * 弹出可执行的优先级最高的任务，如果没有可执行的任务则返回null。
+     * 尝试弹出一个指定时间内可执行的任务。
+     * 你应该使用{@link #nanoTime()}方法获取一个纠正后的纳秒时间(其实就是相对时间，而不是系统的绝对时间)
      *
      * Return the {@link Runnable} which is ready to be executed with the given {@code nanoTime}.
      * You should use {@link #nanoTime()} to retrieve the correct {@code nanoTime}.
@@ -129,38 +129,39 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         assert inEventLoop();
 
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
-        // peek只检测队列的首元素，不对队列结构造成影响，是一个消耗很低的操作。
+        // 如果没有任务，返回null
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
         if (scheduledTask == null) {
             return null;
         }
-        // 确定优先级最高的任务需要执行时，才真正从队列中删除。
-        // 如果先删除再插入，就是一个相对高消耗的操作，而先peek再删除可以有更好的性能。
         if (scheduledTask.deadlineNanos() <= nanoTime) {
+            // 如果优先级最高的任务可以执行，那么从队列中删除，准备执行
             scheduledTaskQueue.remove();
             return scheduledTask;
         }
+        // 如果优先级最高的任务都不能执行，那么其它任务也不能执行，返回null
         return null;
     }
 
     /**
+     * 返回下一个任务被调度的延迟时间。
+     * 如果返回-1，则表示没有任务可被调度。
+     *
      * Return the nanoseconds when the next scheduled task is ready to be run or {@code -1} if no task is scheduled.
      */
     protected final long nextScheduledTaskNano() {
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
         ScheduledFutureTask<?> scheduledTask = scheduledTaskQueue == null ? null : scheduledTaskQueue.peek();
+        // 没有任务，返回-1
         if (scheduledTask == null) {
             return -1;
         }
+        // 任务下次的执行时间 - 当前的时间 得到延迟。延迟最小返回0。
         return Math.max(0, scheduledTask.deadlineNanos() - nanoTime());
     }
 
     /**
-     * 查看周期性调度任务中优先级最高的任务。
-     * 周期性调度的任务优先级高于普通任务队列中的任务。
-     * (底层的实现多为优先检查周期性调度的任务，其次执行提交的普通任务).
-     *
-     * 如果不存在则返回null，否则返回当前优先级最高的任务
+     * 查看任务队列中优先级最高的任务，如果不存在则返回null。
      *
      * @return null/ScheduledFutureTask
      */
@@ -173,7 +174,10 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     }
 
     /**
+     * 查询是否可执行的任务
+     *
      * Returns {@code true} if a scheduled task is ready for processing.
+     *          当且仅当有可执行的任务时返回true.
      */
     protected final boolean hasScheduledTasks() {
         Queue<ScheduledFutureTask<?>> scheduledTaskQueue = this.scheduledTaskQueue;
@@ -185,6 +189,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
     public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
         ObjectUtil.checkNotNull(command, "command");
         ObjectUtil.checkNotNull(unit, "unit");
+        // 对时间进行了修正，因为<0 表示的是固定延迟，周期性执行
         if (delay < 0) {
             delay = 0;
         }
@@ -201,6 +206,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         if (delay < 0) {
             delay = 0;
         }
+        // 对时间进行了修正，因为<0 表示的是固定频率，周期性执行
         validateScheduled0(delay, unit);
 
         return schedule(new ScheduledFutureTask<V>(
@@ -215,6 +221,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
             throw new IllegalArgumentException(
                     String.format("initialDelay: %d (expected: >= 0)", initialDelay));
         }
+        // 调用周期必须大于0
         if (period <= 0) {
             throw new IllegalArgumentException(
                     String.format("period: %d (expected: > 0)", period));
@@ -222,6 +229,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         validateScheduled0(initialDelay, unit);
         validateScheduled0(period, unit);
 
+        // 这里保持period大于0，表示固定频率执行
         return schedule(new ScheduledFutureTask<Void>(
                 this, Executors.<Void>callable(command, null),
                 ScheduledFutureTask.deadlineNanos(unit.toNanos(initialDelay)), unit.toNanos(period)));
@@ -242,7 +250,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
 
         validateScheduled0(initialDelay, unit);
         validateScheduled0(delay, unit);
-
+        // 这里对delay取反，表示固定延迟执行
         return schedule(new ScheduledFutureTask<Void>(
                 this, Executors.<Void>callable(command, null),
                 ScheduledFutureTask.deadlineNanos(unit.toNanos(initialDelay)), -unit.toNanos(delay)));
@@ -263,6 +271,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         // NOOP
     }
 
+    // 真正添加一个任务，实现线程封闭
     <V> ScheduledFuture<V> schedule(final ScheduledFutureTask<V> task) {
         if (inEventLoop()) {
             // EventLoop线程添加的任务，EventLoop线程可以安全的访问线程封闭的数据
@@ -281,6 +290,7 @@ public abstract class AbstractScheduledEventExecutor extends AbstractEventExecut
         return task;
     }
 
+    // 真正移除一个任务，实现线程封闭
     final void removeScheduled(final ScheduledFutureTask<?> task) {
         if (inEventLoop()) {
             scheduledTaskQueue().removeTyped(task);

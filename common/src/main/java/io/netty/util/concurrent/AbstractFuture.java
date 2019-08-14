@@ -21,8 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * {@link Future}的抽象实现。
- * 统一实现了get()方法。
+ * {@link Future}的抽象实现，仅仅实现了get()方法。
  *
  * Abstract {@link Future} implementation which does not allow for cancellation.
  *
@@ -30,31 +29,32 @@ import java.util.concurrent.TimeoutException;
  */
 public abstract class AbstractFuture<V> implements Future<V> {
 
-    /**
-     * get的本质就是一直等待直到操作完成，然后查询结果
-     * @return
-     * @throws InterruptedException
-     * @throws ExecutionException
-     */
     @Override
     public V get() throws InterruptedException, ExecutionException {
+        // 等待进入完成状态
         await();
 
         Throwable cause = cause();
         if (cause == null) {
+            // 如果是正常结束
             return getNow();
         }
+        // 如果是被取消
         if (cause instanceof CancellationException) {
             throw (CancellationException) cause;
         }
+        // 如果其它原因导致执行失败
         throw new ExecutionException(cause);
     }
 
     @Override
     public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         if (await(timeout, unit)) {
+            // 这个重复代码应该消除
+            // rethrowIfFailed(cause());
+            // return getNow();
+
             Throwable cause = cause();
-            // 没有
             if (cause == null) {
                 return getNow();
             }

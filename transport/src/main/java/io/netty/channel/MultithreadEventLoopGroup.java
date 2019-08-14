@@ -86,6 +86,7 @@ public abstract class MultithreadEventLoopGroup extends MultithreadEventExecutor
         return (EventLoop) super.next();
     }
 
+    /** {@inheritDoc} */
     @Override
     protected abstract EventLoop newChild(Executor executor, Object... args) throws Exception;
 
