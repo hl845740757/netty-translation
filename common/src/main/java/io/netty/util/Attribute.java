@@ -52,6 +52,19 @@ public interface Attribute<T> {
     T setIfAbsent(T value);
 
     /**
+     * 从该attribute所属的attributeMap中删除，并返回旧的值，接下来的{@link #get()}调用将放回null.
+     * 如果你仅仅是想返回并清空当前值，但是并不从AttributeMap中删除，那么请使用{@link #getAndSet(Object)}，将值置为null。
+     *
+     * 请注意，即使调用此方法，也可能有另一个线程通过{@link AttributeMap#attr(AttributeKey)} 获得了对该{@link Attribute}的引用。
+     * 这样两个线程仍然可能操作的是同一个实例。
+     * 如果另一个线程或者当前线程稍后调用{@link AttributeMap#attr(AttributeKey)}，将会创建一个和之前的attribute不同的新的Attribute实例。
+     * 因此调用@link #remove()} 或 {@link #getAndRemove()}应特别小心。
+     *
+     * 底层实现：
+     * 在调用{@link AttributeMap#attr(AttributeKey)}时，如果没有符合要求的Attribute，那么将会新建一个符合要求的Attribute，
+     * 某个瞬间可能存在一个AttributeKey的多个Attribute，但是只有一个是有效的，其它的都是等待删除的，
+     * 你拿着一个AttributeKey，根本不知道取出来的是哪个，可能是对的，也可能的错的，但是一定是最新的。
+     *
      * Removes this attribute from the {@link AttributeMap} and returns the old value. Subsequent {@link #get()}
      * calls will return {@code null}.
      *
@@ -77,6 +90,19 @@ public interface Attribute<T> {
     boolean compareAndSet(T oldValue, T newValue);
 
     /**
+     * 从该attribute所属的attributeMap中删除，接下来的{@link #get()}调用将放回null.
+     * 如果你仅仅是想返回并清空当前值，但是并不从AttributeMap中删除，那么请使用{@link #set(Object)}，将值置为null。
+     *
+     * 请注意，即使调用此方法，也可能有另一个线程通过{@link AttributeMap#attr(AttributeKey)} 获得了对该{@link Attribute}的引用。
+     * 这样两个线程仍然可能操作的是同一个实例。
+     * 如果另一个线程或者当前线程稍后调用{@link AttributeMap#attr(AttributeKey)}，将会创建一个和之前的attribute不同的新的Attribute实例。
+     * 因此调用@link #remove()} 或 {@link #getAndRemove()}应特别小心。
+     *
+     * 底层实现：
+     * 在调用{@link AttributeMap#attr(AttributeKey)}时，如果没有符合要求的Attribute，那么将会新建一个符合要求的Attribute，
+     * 某个瞬间可能存在一个AttributeKey的多个Attribute，但是只有一个是有效的，其它的都是等待删除的，
+     * 你拿着一个AttributeKey，根本不知道取出来的是哪个，可能是对的，也可能的错的，但是一定是最新的。
+     *
      * Removes this attribute from the {@link AttributeMap}. Subsequent {@link #get()} calls will return @{code null}.
      *
      * If you only want to remove the value and clear the {@link Attribute} while still keep it in

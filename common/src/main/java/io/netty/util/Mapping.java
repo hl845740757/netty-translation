@@ -18,7 +18,7 @@ package io.netty.util;
 import java.util.function.Function;
 
 /**
- * 讲一个对象映射为另一个对象。
+ * 将一个对象映射为另一个对象。
  * 含义可参考{@link java.util.stream.Stream#map(Function)}。
  * 可以看做更加具体的{@link Function}，{@link Mapping}表示更加确切的含义。
  *

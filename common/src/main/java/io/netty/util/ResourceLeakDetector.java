@@ -39,6 +39,10 @@ import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 import static io.netty.util.internal.StringUtil.NEWLINE;
 import static io.netty.util.internal.StringUtil.simpleClassName;
 
+/**
+ * 资源泄漏检测器 --- (尚未用过)
+ * @param <T>
+ */
 public class ResourceLeakDetector<T> {
 
     private static final String PROP_LEVEL_OLD = "io.netty.leakDetectionLevel";
@@ -60,20 +64,27 @@ public class ResourceLeakDetector<T> {
      */
     public enum Level {
         /**
+         * 禁用资源泄漏检测 -- 可以确定没有泄漏的情况下可以关闭，一般简单的使用还是容易保证没有泄漏的。
          * Disables resource leak detection.
          */
         DISABLED,
         /**
+         * 启用简单的采样资源泄漏检测，该检测报告是否存在泄漏，开销很小。它是默认的检测方式。
+         *
          * Enables simplistic sampling resource leak detection which reports there is a leak or not,
          * at the cost of small overhead (default).
          */
         SIMPLE,
         /**
+         * 启用高级采样资源泄漏检测，以高开销为代价报告最近访问泄漏对象的位置。---- 建议在测试期间可以打开，或者当发现存在泄漏问题的时候打开。
+         *
          * Enables advanced sampling resource leak detection which reports where the leaked object was accessed
          * recently at the cost of high overhead.
          */
         ADVANCED,
         /**
+         * 启用??严格地的资源泄漏检测，以尽可能高的开销报告最近访问泄漏对象的位置。 ---- 仅用于测试目的。
+         *
          * Enables paranoid resource leak detection which reports where the leaked object was accessed recently,
          * at the cost of the highest possible overhead (for testing purposes only).
          */

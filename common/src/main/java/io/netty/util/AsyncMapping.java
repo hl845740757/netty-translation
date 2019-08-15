@@ -18,9 +18,17 @@ package io.netty.util;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 异步映射函数。
+ * @param <IN> 输入类型
+ * @param <OUT> 输出类型
+ */
 public interface AsyncMapping<IN, OUT> {
 
     /**
+     * 返回的future将会提供映射的结果，其实就是参数的promise。
+     * 给定的promise在结果可以的时候回被填充结果。
+     *
      * Returns the {@link Future} that will provide the result of the mapping. The given {@link Promise} will
      * be fulfilled when the result is available.
      */

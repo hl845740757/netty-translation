@@ -15,21 +15,32 @@
  */
 package io.netty.util;
 
+/**
+ * 资源泄漏追踪器
+ * @param <T> 资源类型
+ */
 public interface ResourceLeakTracker<T>  {
 
     /**
+     * 记录调用者的当且堆栈信息，以便{@link ResourceLeakDetector} 可以确定最后访问泄漏资源的位置。
+     * 该方法是{@link #record(Object) record(null)}的一个快捷方式。
+     *
      * Records the caller's current stack trace so that the {@link ResourceLeakDetector} can tell where the leaked
      * resource was accessed lastly. This method is a shortcut to {@link #record(Object) record(null)}.
      */
     void record();
 
     /**
+     * 记录调用者的当且堆栈信息和指定的其它任意信息，以便{@link ResourceLeakDetector} 可以确定最后访问泄漏资源的位置。
+     *
      * Records the caller's current stack trace and the specified additional arbitrary information
      * so that the {@link ResourceLeakDetector} can tell where the leaked resource was accessed lastly.
      */
     void record(Object hint);
 
     /**
+     * 关闭该资源相关的泄漏追踪，使得{@link ResourceLeakTracker}不会再警告该泄漏的资源。
+     *
      * Close the leak so that {@link ResourceLeakTracker} does not warn about leaked resources.
      * After this method is called a leak associated with this ResourceLeakTracker should not be reported.
      *

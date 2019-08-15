@@ -20,7 +20,8 @@ import static io.netty.util.ByteProcessorUtils.LINE_FEED;
 import static io.netty.util.ByteProcessorUtils.SPACE;
 
 /**
- * {@link ByteProcessor}提供一种遍历字节集合的机制。
+ * 字节处理器，提供一种遍历字节集合的机制。
+ * 类似{@link java.util.function.Predicate}，只不过参数为byte
  *
  * Provides a mechanism to iterate over a collection of bytes.
  */

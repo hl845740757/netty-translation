@@ -24,11 +24,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ConstantPool是一个或多个常量的一个池。
+ * Netty的常量和常量池设计的非常具有可扩展性。你也可以基于Netty的模板实现自己的一套常量。
  *
  * A pool of {@link Constant}s.
  *
- * @param <T> 常量的类型。
- *           the type of the constant。
+ * @param <T> the type of the constant。
+ *           常量的类型。
  */
 public abstract class ConstantPool<T extends Constant<T>> {
     /**
@@ -90,7 +91,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
             // concurrentMap支持原子的putIfAbsent操作，返回的是旧值
             constant = constants.putIfAbsent(name, tempConstant);
             if (constant == null) {
-                // 旧值不存在，新值就是目标对象
+                // 旧值不存在，新值就是目标对象，否则旧值就是目标常量
                 return tempConstant;
             }
         }
@@ -142,8 +143,6 @@ public abstract class ConstantPool<T extends Constant<T>> {
 
     /**
      * 检查名字非空且非null
-     * @param name
-     * @return
      */
     private static String checkNotNullAndNotEmpty(String name) {
         ObjectUtil.checkNotNull(name, "name");
@@ -157,10 +156,7 @@ public abstract class ConstantPool<T extends Constant<T>> {
 
     /**
      * 一个工厂方法，由子类创建具体的类型。
-     * 本类中使用调用该方法的都是模板方法。
-     * @param id
-     * @param name
-     * @return
+     * 本类中调用该方法的都是模板方法。
      */
     protected abstract T newConstant(int id, String name);
 

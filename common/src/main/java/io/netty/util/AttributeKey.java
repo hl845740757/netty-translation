@@ -66,14 +66,9 @@ public final class AttributeKey<T> extends AbstractConstant<AttributeKey<T>> {
     }
 
     /**
-     一个快捷调用方式。
+     * 一个快捷调用方式。
      * 将{@code firstNameComponent.getName() + "#" + secondNameComponent} 构成新的key;
      * 再调用 {@link #valueOf(String)}方法
-     *
-     * @param firstNameComponent
-     * @param secondNameComponent
-     * @param <T>
-     * @return
      */
     @SuppressWarnings("unchecked")
     public static <T> AttributeKey<T> valueOf(Class<?> firstNameComponent, String secondNameComponent) {

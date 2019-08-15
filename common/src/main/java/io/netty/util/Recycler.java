@@ -32,7 +32,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 /**
- * 轻量级的对象池，基于Thread-local栈(对象存在线程独立内存)。
+ * 轻量级的对象池，基于Thread-local，进行线程封闭(线程独立内存)。
  * (蝇量模式/享元模式)
  * 该类的职责就是回收和分配对象。
  *
