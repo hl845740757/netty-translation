@@ -59,6 +59,7 @@ public abstract class AbstractConstant<T extends AbstractConstant<T>> implements
         return name();
     }
 
+    // ------------------ 禁止子类重写hashcode和equals 和 compareTo ------------------------
     @Override
     public final int hashCode() {
         return super.hashCode();
@@ -79,18 +80,19 @@ public abstract class AbstractConstant<T extends AbstractConstant<T>> implements
         AbstractConstant<T> other = o;
         int returnCode;
 
+        // 先比较的hashcode (似乎也没有什么特别大的意义？默认的hashcode也并不具备区分度)
         returnCode = hashCode() - other.hashCode();
         if (returnCode != 0) {
             return returnCode;
         }
-
+        // 再比较uniquifier (倒是uniquifier一定是先分配的更小)
         if (uniquifier < other.uniquifier) {
             return -1;
         }
         if (uniquifier > other.uniquifier) {
             return 1;
         }
-
+        // 每一个常量都有一个唯一的id
         throw new Error("failed to compare two different constants");
     }
 

@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  *
  * JDK的Future最大的问题就是不知道任务何时完成。{@link java.util.concurrent.CompletableFuture}接口又不是那么的好用。
  * Netty对JDK的Future进行了扩展，添加了事件完成的回调机制。Netty也推荐大家使用回调机制监听计算的完成事件，此外还提供了一些方便开发者使用的接口。
- * Netty的监听器实现的不友好的一点是不能指定监听器运行的环境。 缺少这样方法{@code addListener(FutureListener, Executor)}支持。
+ * Netty的监听器实现的不友好的一点是不能指定监听器运行的环境。 缺少这样的方法{@code addListener(FutureListener, Executor)}支持。
  *
  * Netty的Future实现了流式语法，方法返回{@link Future}的都是返回的this，并发组件实现这个还是有点不容易的，因为涉及大量的子类重写这些方法，
  * 一旦某个子类重写未按规则来，就GG了。
