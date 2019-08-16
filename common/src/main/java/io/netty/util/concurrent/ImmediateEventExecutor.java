@@ -171,9 +171,8 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
         @Override
         protected void checkDeadLock() {
             // No check
-            // 为何不检查死锁？
-            // 理论上也是会出现死锁可能的，但跟Netty使用该对象的情景也有关。
-            // 比如创建一个Promise之后，总是将该Promise传给另一个线程，那么也没有什么问题。
+            // 为何不检查死锁？ 因为检查死锁一定会抛出BlockingOperateExeception
+            // 因为检查死锁过程中，获取到的Executor就是ImmediateEventExecutor，inEventLoop始终返回true。
         }
     }
 
