@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * 立即执行的EventExecutor，有些地方也叫SameThreadExecutor。
  * 含义可参考{@link java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy}。
- * 提交的任务的线程立即执行它所提交的任务。如果{@link #execute(Runnable)}是可重入的，
- * 那么该任务将会压入队列直到原始的{@link Runnable}完成执行。
+ *
+ * 提交的任务的线程立即执行它所提交的任务。{@link #execute(Runnable)}是可重入的，新提交的任务将会压入队列直到前面的任务完成执行。
  * <p>
  * {@link #execute(Runnable)} 抛出的所有异常都将被吞没并记录一个日志。目的是确保所有压入队列的任务都有机会执行。
  * </p>
@@ -76,10 +76,11 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
 
     @Override
     public boolean inEventLoop() {
+        // 每个线程都返回true，但是使用的数据都是隔离的。
+        // 必须返回true，提交的任务才能被当前线程立即执行。
         return true;
     }
 
-    /** 因为该EventExecutor就是基于当前线程的，因此返回true */
     @Override
     public boolean inEventLoop(Thread thread) {
         return true;
@@ -171,7 +172,7 @@ public final class ImmediateEventExecutor extends AbstractEventExecutor {
         @Override
         protected void checkDeadLock() {
             // No check
-            // 为何不检查死锁？ 因为检查死锁一定会抛出BlockingOperateExeception
+            // 为何不检查死锁？ 因为检查死锁一定会抛出BlockingOperateException
             // 因为检查死锁过程中，获取到的Executor就是ImmediateEventExecutor，inEventLoop始终返回true。
         }
     }
