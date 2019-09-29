@@ -175,7 +175,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         if (RESULT_UPDATER.compareAndSet(this, null, UNCANCELLABLE)) {
             return true;
         }
-        // 到这里 result一定不可为null，表示未 非取消状态 或 完成状态
+        // 到这里 result一定不可为null，表示 不可取消状态 或 完成状态
         // !isDone0(result) 其实等价于 result == UNCANCELLABLE
         // !isCancelled0(result) 表示非取消进入的完成状态
         Object result = this.result;

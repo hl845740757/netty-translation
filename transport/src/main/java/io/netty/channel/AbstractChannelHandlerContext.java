@@ -40,12 +40,11 @@ abstract class AbstractChannelHandlerContext extends DefaultAttributeMap
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(AbstractChannelHandlerContext.class);
     /**
-     * 下一个handler的缓存。
-     * 缓存还不一定增加了性能，而且复杂度高了好多，总得维护。
+     * 下一个handler的索引。
      */
     volatile AbstractChannelHandlerContext next;
     /**
-     * 上一个handler的缓存
+     * 上一个handler的索引
      */
     volatile AbstractChannelHandlerContext prev;
 

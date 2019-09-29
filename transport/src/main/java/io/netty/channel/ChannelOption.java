@@ -27,7 +27,7 @@ import java.net.NetworkInterface;
  * 支持的{@link ChannelOption}依赖于{@link ChannelConfig}的真正实现，并且可能依赖于它所属的
  * 传输(方式)的性质。
  *
- * ChannelOption本身维护值，只用于约束值的类型。它作为key存取它对它的值。
+ * ChannelOption本身不维护值，只用于约束值的类型。它作为key存取它对它的值。
  * <p>
  *
  * A {@link ChannelOption} allows to configure a {@link ChannelConfig} in a type-safe

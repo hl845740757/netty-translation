@@ -26,7 +26,7 @@ import java.net.SocketAddress;
  */
 public final class ChannelMetadata {
     /**
-     * 是否已断开连接
+     * 是否拥有{@code disconnect()}方法，即：是否允许调用{@code disconnect()}之后调用{@link Channel#connect(SocketAddress)}进行重用。
      */
     private final boolean hasDisconnect;
     /**
