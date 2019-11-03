@@ -76,7 +76,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      */
     private volatile Object result;
     /**
-     * 创建Promise的EventLoop，Future所在的环境，也是默认的通知用的executor。
+     * 默认的通知用的executor，一般是创建Promise的EventLoop。
      * 如果任务执行期间可能改变executor，那么需要重写{@link #executor()}，以返回最新的executor。
      */
     private final EventExecutor executor;
@@ -211,7 +211,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         synchronized (this) {
             addListener0(listener);
         }
-        // 必须检查是否已经进入完成状态，避免信号丢失。
+        // 必须检查是否已经进入完成状态，避免信号丢失 - 因为进入完成状态与锁没有关系
         if (isDone()) {
             notifyListeners();
         }
@@ -279,8 +279,23 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         // 检查死锁可能
         checkDeadLock();
 
-        // 这里可以在while里面加锁，是因为isDone并不需要获得锁才能检查。
-        // synchronize在while内部的话，wait醒来后，申请锁之后才能执行，但是又会立即释放锁，检查到条件不满足后，可能又立即申请锁。
+        // synchronized的标准模式
+//        synchronized (this) {
+//            while(!condition()) {
+//                this.wait();
+//            }
+//        }
+
+        // 显式锁的标准模式
+//        lock.lock();
+//        try {
+//            while (!isOK()) {
+//                condition.await();
+//            }
+//        } finally {
+//            lock.unlock();
+//        }
+
         synchronized (this) {
             while (!isDone()) {
                 incWaiters();
@@ -467,9 +482,10 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     /**
      * 检查死锁。
-     * {@link #executor()}是任务当前的执行环境，EventLoop是单线程的，不可以在当前线程上等待另一个任务完成，会导致死锁。
      */
     protected void checkDeadLock() {
+        // 默认情况下，通知用的executor就是任务的执行环境
+        // EventLoop是单线程的，不可以在当前线程上等待另一个任务完成，会导致死锁。
         EventExecutor e = executor();
         if (e != null && e.inEventLoop()) {
             throw new BlockingOperationException(toString());
@@ -732,6 +748,44 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         PlatformDependent.throwException(cause);
     }
 
+    /**
+     * 这块我觉得netty写的不太好，
+     * 1. 获取锁需要时间，因此应该在获取锁之后计算剩余时间
+     * 2. synchronized应该放在外层，如果被错误的唤醒，那么会立即释放锁，又立即竞争锁。
+     * 3. 可读性不好，不易理解 - 与锁的标准模式差别较大
+     *
+     * 我的实现大致如下：
+     * <pre>{@code
+     *         boolean interrupted = Thread.interrupted();
+     *         final long endTime = System.nanoTime() + unit.toNanos(timeout);
+     *         try {
+     *             synchronized (this) {
+     *                 while (!isDone()) {
+     *                     // 获取锁需要时间，因此应该在获取锁之后计算剩余时间
+     *                     final long remainNano = endTime - System.nanoTime();
+     *                     if (remainNano <= 0) {
+     *                          // 再尝试一下
+     *                         return isDone();
+     *                     }
+     *                     incWaiters();
+     *                     try {
+     *                         this.wait(remainNano / 1000000, (int) (remainNano % 1000000));
+     *                     } catch (InterruptedException e) {
+     *                         interrupted = true;
+     *                     } finally {
+     *                         decWaiters();
+     *                     }
+     *                 }
+     *                 return true;
+     *             }
+     *         } finally {
+     *             // 恢复中断状态
+     *             if (interrupted) {
+     *                 Thread.currentThread().interrupt();
+     *             }
+     *         }
+     * }</pre>
+     */
     private boolean await0(long timeoutNanos, boolean interruptable) throws InterruptedException {
         // 已完成，检查一次已完成，可以避免在完成的状态下的死锁问题。
         if (isDone()) {
@@ -752,9 +806,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         long startTime = System.nanoTime();
         long waitTime = timeoutNanos;
         boolean interrupted = false;
-        // 这块我觉得写的不太好
-        // 1. 获取锁需要时间，因此应该在获取锁之后计算剩余时间
-        // 2. synchronized应该放在外层，如果被错误的唤醒，那么会立即释放锁，又立即竞争锁。
+
+        // 限时等待
         try {
             for (;;) {
                 synchronized (this) {
@@ -791,22 +844,6 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
                 Thread.currentThread().interrupt();
             }
         }
-
-        // 我个人实现的时候这么写的
-//         synchronized (this){
-//            for (long remainNano = endTime - System.nanoTime(); remainNano > 0; remainNano = endTime - System.nanoTime()) {
-//                if (isDone()){
-//                    return true;
-//                }
-//                incWaiters();
-//                try {
-//                    this.wait(remainNano / NANO_PER_MILLISECOND, (int) (remainNano % NANO_PER_MILLISECOND));
-//                } finally {
-//                    decWaiters();
-//                }
-//            }
-//        }
-//        return isDone();
     }
 
     /**

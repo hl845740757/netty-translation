@@ -27,6 +27,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 实现了{@link java.util.concurrent.ScheduledExecutorService}中的方法，支持单线程下的定时任务调度。
+ * <p>
+ * {@link java.util.concurrent.ScheduledThreadPoolExecutor}是多线程的任务调度，而{@link AbstractScheduledEventExecutor}
+ * 是单线程的任务调度。
+ *
+ * </p>
  *
  * Abstract base class for {@link EventExecutor}s that want to support scheduling.
  */

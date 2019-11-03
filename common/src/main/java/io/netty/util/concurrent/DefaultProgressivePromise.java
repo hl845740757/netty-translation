@@ -18,6 +18,8 @@ package io.netty.util.concurrent;
 
 /**
  * 默认的含有进度的promise(未研究)
+ * （在写半包的时候有用到）
+ *
  * @param <V>
  */
 public class DefaultProgressivePromise<V> extends DefaultPromise<V> implements ProgressivePromise<V> {

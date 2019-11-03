@@ -21,6 +21,9 @@ import java.util.concurrent.ThreadFactory;
 /**
  * 默认的{@link SingleThreadEventExecutor}实现，它仅仅以有序的方式执行所有提交的任务。
  *
+ * <h3>高危警告</h3>
+ * {@link #run()}执行任务的时候没有调用{@link #safeExecute(Runnable)}，因此出现异常时会导致线程退出。
+ *
  * Default {@link SingleThreadEventExecutor} implementation which just execute all submitted task in a
  * serial fashion.
  */
@@ -68,7 +71,7 @@ public final class DefaultEventExecutor extends SingleThreadEventExecutor {
         for (;;) {
             Runnable task = takeTask();
             if (task != null) {
-                // 成功取出一个任务，进行执行。注意：并没有调用safeExecute，因此出现异常会退出循环
+                // 成功取出一个任务，进行执行。注意：并没有调用safeExecute，因此出现异常会退出循环（关闭线程）
                 task.run();
                 updateLastExecutionTime();
             }

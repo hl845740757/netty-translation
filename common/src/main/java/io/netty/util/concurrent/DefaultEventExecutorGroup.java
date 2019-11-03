@@ -21,7 +21,6 @@ import java.util.concurrent.ThreadFactory;
 /**
  * {@link DefaultEventExecutor}的容器，负责管理{@link DefaultEventExecutor}。
  *
- *
  * Default implementation of {@link MultithreadEventExecutorGroup} which will use {@link DefaultEventExecutor} instances
  * to handle the tasks.
  */

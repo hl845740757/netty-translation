@@ -29,9 +29,14 @@ import java.util.concurrent.TimeUnit;
  * 1. 通过它的 {@link #next()} 方法提供 {@link EventExecutor}
  * 2. 此外，还负责 {@link EventExecutor} 的生命周期，允许使用全局统一的方式关闭他们。--- fashion(时尚，方法，方式)
  *
+ * <h3>与{@link java.util.concurrent.ThreadPoolExecutor}最大的区别</h3>
+ * {@link java.util.concurrent.ThreadPoolExecutor}中的所有线程共用一个队列，而{@link EventExecutorGroup}中是每一个线程一个队列。
+ * 使得{@link EventExecutorGroup}可以有更小的竞争，性能更好。但是如果存在必须使用全局队列的情况，那么便不能使用{@link EventExecutorGroup}。
+ *
+ * <p>
  * 总的来说：它是一组线程服务的高级封装，它并不直接处理用户请求，而是将请求转交给它所持有的执行单元。它管理它持有的执行单元的生命周期。
  *
- * EventExecutorGroup是Netty中的事件服务(事件处理器你)的顶层接口。
+ * EventExecutorGroup是Netty中的事件服务(事件处理器)的顶层接口。
  *
  * PS:
  * EventExecutorGroup 与 EventExecutor 之间的关系就是容器与容器内的元素这样的关系。
@@ -52,6 +57,15 @@ public interface EventExecutorGroup extends ScheduledExecutorService, Iterable<E
      * {@link EventExecutorGroup}管理着一组{@link EventExecutor}，由它们真正的执行任务(请求)。
      * 1. 在返回{@link EventExecutor}时需要尽可能的负载均衡。
      * 2. 该方法需要保证线程安全，因为可能被多线程调用。
+     * <P>
+     * 我在我的实现中添加了一个select方法
+     * <pre>
+     * {@code
+     *      EventExecutor select(int key);
+     * }
+     * </pre>
+     * 当固定线程数时，同一个key总是返回同一个EventExecutor，可以实现一些有意思的功能。
+     * </p>
      *
      * (该方法比较重要，因此我挪动到最上面)
      *

@@ -153,7 +153,7 @@ public abstract class AbstractEventExecutor extends AbstractExecutorService impl
     }
     // endregion
 
-    // region 屏蔽掉默认实现，要求子类必须复写
+    // region
     @Override
     public ScheduledFuture<?> schedule(Runnable command, long delay,
                                        TimeUnit unit) {

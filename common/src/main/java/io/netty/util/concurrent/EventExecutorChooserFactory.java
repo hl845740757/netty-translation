@@ -36,8 +36,17 @@ public interface EventExecutorChooserFactory {
     /**
      * 当调用{@link EventExecutorGroup#next()}的时候，由 Chooser负责真正的选择。
      * 主要是实现Executor的负载均衡。
+     * <P>
+     * 我在我的实现中添加了一个select方法
+     * <pre>
+     * {@code
+     *      EventExecutor select(int key);
+     * }
+     * </pre>
+     * 当固定线程数时，同一个key总是返回同一个EventExecutor，可以实现一些有意思的功能。
+     * </p>
+     * 是一种策略模式的运用。
      *
-     * 是一种策略模式(或者说桥接模式)的运用
      * Chooses the next {@link EventExecutor} to use.
      */
     @UnstableApi
