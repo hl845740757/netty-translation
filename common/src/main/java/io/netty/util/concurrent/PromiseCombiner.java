@@ -22,11 +22,13 @@ import io.netty.util.internal.ObjectUtil;
  * 当且仅当所有被聚合的Future都成功时，该聚合的Promise才表现为成功。任意一个Future失败，那么该聚合的Promise都将表现为失败。
  * 聚合的Promise失败的原因是这些失败的future中的某一个。确切地说，如果被聚合的future中有多个future失败，哪一个失败的原因将会被赋值给
  * 该聚合的promise将是不确定的。
- *
+ * <p>
  * 调用者可以通过{@link PromiseCombiner#add(Future)} and {@link PromiseCombiner#addAll(Future[])}添加任意数量的future，
  * 当所有要被合并的future被添加以后，调用者必须通过{@link PromiseCombiner#finish(Promise)}提供一个聚合的promise，当所有被合并的promise
  * 完成的时候被通知。
  * (有点生硬:其实就是说你在聚合完成之后，需要提供一个自己的promise，以便在所有被聚合的future进入完成状态之后得到一个通知)
+ * <p>
+ * 该工具类的应用场景一般是拆包，当将一个完整数据包拆分为多个小包时，只有当这些小包都传输完成时，该数据包才算传输完成。
  *
  * <p>A promise combiner monitors the outcome of a number of discrete futures, then notifies a final, aggregate promise
  * when all of the combined futures are finished. The aggregate promise will succeed if and only if all of the combined

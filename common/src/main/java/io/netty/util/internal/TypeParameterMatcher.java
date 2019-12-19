@@ -27,6 +27,8 @@ import java.util.Map;
 /**
  * 泛型参数匹配器。
  * {@link TypeParameterMatcher}是非常重要的一个类，它对Netty的写出优雅的、强大的模板类起了重要作用。
+ * 不过它也有很大的缺陷：它并不支持在接口中查找真实类型。我在我的实现中，对其进行了扩展。
+ * 不过在netty中，一般都是用在抽象模板类中，用于查找该模板类自己定义的泛型，所以是ok的。
  */
 public abstract class TypeParameterMatcher {
     /**
@@ -197,9 +199,6 @@ public abstract class TypeParameterMatcher {
 
     /**
      * 进行失败处理，抛出异常
-     * @param type
-     * @param typeParamName
-     * @return
      */
     private static Class<?> fail(Class<?> type, String typeParamName) {
         throw new IllegalStateException(
@@ -208,8 +207,6 @@ public abstract class TypeParameterMatcher {
 
     /**
      * 查询给定的对象是否匹配
-     * @param msg
-     * @return
      */
     public abstract boolean match(Object msg);
 

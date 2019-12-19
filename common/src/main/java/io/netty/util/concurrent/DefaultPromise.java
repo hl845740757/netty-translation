@@ -266,6 +266,27 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         return this;
     }
 
+    /**
+     * <pre> {@code
+     *         // synchronized的标准模式
+     *         synchronized (this) {
+     *             while(!condition()) {
+     *                 this.wait();
+     *             }
+     *         }
+     *
+     *         // 显式锁的标准模式
+     *         lock.lock();
+     *         try {
+     *             while (!isOK()) {
+     *                 condition.await();
+     *             }
+     *         } finally {
+     *             lock.unlock();
+     *         }
+     * }
+     * </pre>
+     */
     @Override
     public Promise<V> await() throws InterruptedException {
         // 先检查一次是否已完成，减小锁竞争，同时在完成的情况下，等待不会死锁。
@@ -278,23 +299,6 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
         // 检查死锁可能
         checkDeadLock();
-
-        // synchronized的标准模式
-//        synchronized (this) {
-//            while(!condition()) {
-//                this.wait();
-//            }
-//        }
-
-        // 显式锁的标准模式
-//        lock.lock();
-//        try {
-//            while (!isOK()) {
-//                condition.await();
-//            }
-//        } finally {
-//            lock.unlock();
-//        }
 
         synchronized (this) {
             while (!isDone()) {

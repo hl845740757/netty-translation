@@ -32,7 +32,6 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
 
     private DefaultEventExecutorChooserFactory() { }
 
-    @SuppressWarnings("unchecked")
     @Override
     public EventExecutorChooser newChooser(EventExecutor[] executors) {
         // 我在我的实现中还提供了一个SingleEventExecutorChooser,当executors.length == 1时使用

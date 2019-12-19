@@ -27,6 +27,7 @@ import java.util.List;
 
 /**
  * {@link MessageToMessageDecoder}将一个消息解码为另一个消息对象，该类属于较为顶层的抽象类。
+ * 该类是一个模板类。
  *
  * {@link ChannelInboundHandlerAdapter} which decodes from one message to an other message.
  *
@@ -53,6 +54,9 @@ import java.util.List;
  */
 public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAdapter {
 
+    /**
+     * 消息类型匹配器
+     */
     private final TypeParameterMatcher matcher;
 
     /**
@@ -120,7 +124,7 @@ public abstract class MessageToMessageDecoder<I> extends ChannelInboundHandlerAd
      *                      注意：该对象在方法返回后，会调用{@link ReferenceCountUtil#refCnt(Object)}尝试释放！！！
      * @param out           the {@link List} to which decoded messages should be added
      *                      解码的消息应该添加到out中，在本次解码完成后会统一传递给下一个handler；
-     *                      其实也可以自己选择传递给下一个channelHandler
+     *                      注意：解码结果要么全部放入到out列表中，要么自己全部处理，否则可能导致消息顺序错乱。
      * @throws Exception    is thrown if an error occurs
      */
     protected abstract void decode(ChannelHandlerContext ctx, I msg, List<Object> out) throws Exception;

@@ -87,10 +87,10 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         }
     };
 
-    // 用于更新线程的转托管
+    // 用于更新线程的状态
     private static final AtomicIntegerFieldUpdater<SingleThreadEventExecutor> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(SingleThreadEventExecutor.class, "state");
-    // 用于更新线程的数学
+    // 用于更新线程的属性
     private static final AtomicReferenceFieldUpdater<SingleThreadEventExecutor, ThreadProperties> PROPERTIES_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(
                     SingleThreadEventExecutor.class, ThreadProperties.class, "threadProperties");
@@ -1151,8 +1151,8 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 // 在这里赋值，EventExecutor之外可以被访问，所以需要为volatile变量。
                 thread = Thread.currentThread();
                 if (interrupted) {
-                    // 这块代码其实不安全，注意看我在interruptThread方法中的注释
                     // 如果在启动前有人请求中断线程，则执行中断逻辑。
+                    // 这块代码其实不安全，注意看我在interruptThread方法中的注释
                     thread.interrupt();
                 }
 

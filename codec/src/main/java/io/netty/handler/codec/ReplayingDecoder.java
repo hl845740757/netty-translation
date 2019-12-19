@@ -85,7 +85,7 @@ import java.util.List;
  * <h3>它是怎么工作的呢?</h3>
  * <li>它的本质就是不断的捕获异常，等待新数据到来时再进行尝试</li>
  * <p>
- * {@link ReplayingDecoder}传递一个特定的{@link ByteBuf}实现(明显是一个包装ByteBuf)，当buffer中没有足够的数据读取时，
+ * {@link ReplayingDecoder}传递一个特定的{@link ByteBuf}实现(一个被包装的ByteBuf)，当buffer中没有足够的数据读取时，
  * 它会抛出一个确定类型的异常。在上面的{@code IntegerHeaderFrameDecoder}中，当你调用{@code buf.readInt()}
  * 你仅仅假设buffer中有4个或更多的字节可读。如果在buffer中帧的有4个或更多的字节可读时，它将会
  * 返回你期望的integer header。 否则将会抛出一个{@link Error}到{@link ReplayingDecoder}。
@@ -464,6 +464,7 @@ public abstract class ReplayingDecoder<S> extends ByteToMessageDecoder {
                         break;
                     }
 
+                    // 回退readerIndex 到 检查点(CheckPoint)! 这是实现不断重复读取的关键
                     // Return to the checkpoint (or oldPosition) and retry.
                     int checkpoint = this.checkpoint;
                     if (checkpoint >= 0) {

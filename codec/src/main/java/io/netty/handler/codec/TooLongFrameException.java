@@ -16,6 +16,9 @@
 package io.netty.handler.codec;
 
 /**
+ * 当基于长度的数据包的长度超过阈值的时候，将抛出该异常。
+ * 示例：{@link LengthFieldBasedFrameDecoder}
+ *
  * An {@link DecoderException} which is thrown when the length of the frame
  * decoded is greater than the allowed maximum.
  */

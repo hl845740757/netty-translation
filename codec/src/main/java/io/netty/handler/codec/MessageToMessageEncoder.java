@@ -30,6 +30,7 @@ import java.util.List;
 
 /**
  * {@link MessageToMessageEncoder}将一个消息编码为另一个消息，该类属于较为顶层的抽象类；
+ * 该类是一个模板类。
  *
  * {@link ChannelOutboundHandlerAdapter} which encodes from one message to an other message
  *
@@ -98,6 +99,7 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
                 }
 
                 if (out.isEmpty()) {
+                    // 用户实现没有将编码结果放入out列表 - 不过却无法检测是否将所有结果都放入了out列表。
                     out.recycle();
                     out = null;
 
@@ -130,6 +132,9 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
         }
     }
 
+    /**
+     * 不追踪消息发送结果
+     */
     private static void writeVoidPromise(ChannelHandlerContext ctx, CodecOutputList out) {
         final ChannelPromise voidPromise = ctx.voidPromise();
         for (int i = 0; i < out.size(); i++) {
@@ -137,6 +142,10 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
         }
     }
 
+    /**
+     * 监听所有的消息包 - 当所有的消息包发送成功时，promise将收到通知。
+     * 这也是{@link #encode(ChannelHandlerContext, Object, List)}方法要求必须将编码结果放入out中的原因。
+     */
     private static void writePromiseCombiner(ChannelHandlerContext ctx, CodecOutputList out, ChannelPromise promise) {
         final PromiseCombiner combiner = new PromiseCombiner(ctx.executor());
         for (int i = 0; i < out.size(); i++) {
@@ -154,6 +163,7 @@ public abstract class MessageToMessageEncoder<I> extends ChannelOutboundHandlerA
      *                      同样的警告：该对象在方法返回之后，会调用{@link ReferenceCountUtil#refCnt(Object)}进行释放。
      * @param out           the {@link List} into which the encoded msg should be added
      *                      needs to do some kind of aggregation
+     *                      编码的结果应该放入该list - 否则监听所有的输出结果
      * @throws Exception    is thrown if an error occurs
      */
     protected abstract void encode(ChannelHandlerContext ctx, I msg, List<Object> out) throws Exception;

@@ -24,7 +24,7 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
- * 用于动态编码/解码字节到消息的编解码器，反之亦然。
+ * 用于即使编码/解码字节到消息的编解码器。
  * 可以认为是{@link ByteToMessageDecoder}和{@link MessageToByteEncoder}的合并。
  *
  * A Codec for on-the-fly encoding/decoding of bytes to messages and vise-versa.

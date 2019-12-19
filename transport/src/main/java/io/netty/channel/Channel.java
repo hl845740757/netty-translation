@@ -230,6 +230,7 @@ public interface Channel extends AttributeMap, ChannelOutboundInvoker, Comparabl
     /**
      * 当且仅当IO线程能立即执行请求的写操作时返回true。当该方法返回false时，任何的写操作请求都被
      * 排队，直到(它所属的)IO线程准备好执行排队的写操作时。
+     * 与{@link ChannelConfig#getWriteBufferWaterMark()}关联。
      *
      * Returns {@code true} if and only if the I/O thread will perform the
      * requested write operation immediately.  Any write requests made when

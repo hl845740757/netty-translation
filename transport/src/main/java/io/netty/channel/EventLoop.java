@@ -18,7 +18,7 @@ package io.netty.channel;
 import io.netty.util.concurrent.OrderedEventExecutor;
 
 /**
- * Netty中的事件循环抽象类。
+ * Netty中的事件循环抽象。
  * 它实现了{@link OrderedEventExecutor}，那么表明它是单线程的（事件循环架构，不是单线程的将没有意义）。
  *
  * {@link EventLoop}将会处理注册到它上面的{@link Channel}的所有IO操作，一个{@link EventLoop}在其生命周期中，

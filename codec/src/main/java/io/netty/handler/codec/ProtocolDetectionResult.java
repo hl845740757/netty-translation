@@ -18,6 +18,7 @@ package io.netty.handler.codec;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
+ * 协议检测结果。
  * Result of detecting a protocol.
  *
  * @param <T> the type of the protocol

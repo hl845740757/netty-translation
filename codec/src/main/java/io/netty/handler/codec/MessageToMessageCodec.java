@@ -24,6 +24,9 @@ import io.netty.util.internal.TypeParameterMatcher;
 import java.util.List;
 
 /**
+ * 消息到消息的编解码器，该类属于较为顶层的抽象类。
+ * 该类是一个模板类。
+ *
  * A Codec for on-the-fly encoding/decoding of message.
  *
  * This can be thought of as a combination of {@link MessageToMessageDecoder} and {@link MessageToMessageEncoder}.
@@ -82,6 +85,9 @@ public abstract class MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN> extends Cha
         }
     };
 
+    /**
+     * 入站和出站消息匹配器 - 是否觉得{@link TypeParameterMatcher}越来越重要了呢？
+     */
     private final TypeParameterMatcher inboundMsgMatcher;
     private final TypeParameterMatcher outboundMsgMatcher;
 

@@ -31,8 +31,8 @@ import java.util.List;
 /**
  * {@link ByteToMessageDecoder}以一种流形式的方式从一个{@link ByteBuf}解码字节到另外一个消息类型。
  * (这里为什么是ByteBuf？因为Netty进行真正IO操作时使用的是ByteBuf)。
+ * 该类是一个模板类。
  * <b>这是一个很重要的解码器</b>
- *
  * <li>该类不是泛型的，是因为：从网络中读取消息时，可能读取到多个消息的帧，而这些消息的类型并不一定相同。</li>
  * <li>该类对应的编码器{@link MessageToByteEncoder}</li>
  * <p></p>
@@ -193,7 +193,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      */
     ByteBuf cumulation;
     /**
-     * 消息聚合器，将未读取的消息和新消息合并到一起，一共一个简单的ByteBuf视图。
+     * 消息聚合器，将未读取的消息和新消息合并到一起，提供一个简单的ByteBuf视图。
      */
     private Cumulator cumulator = MERGE_CUMULATOR;
     /**
