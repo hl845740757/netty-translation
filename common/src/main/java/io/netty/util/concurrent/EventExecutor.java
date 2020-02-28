@@ -52,6 +52,24 @@ public interface EventExecutor extends EventExecutorGroup {
 
     /**
      * 一个便捷方法，查询当前线程(调用方法的线程)是否是EventLoop线程。
+     * 它暗示着：如果当前线程是EventLoop线程，那么可以访问一些线程封闭的数据。
+     * <h3>时序问题</h3>
+     * 以下代码可能产生时序问题:
+     * <pre>
+     * {@code
+     * 		if(eventLoop.inEventLoop()) {
+     * 	    	doSomething();
+     *        } else{
+     * 			eventLoop.execute(() -> doSomething());
+     *        }
+     * }
+     * </pre>
+     * Q: 产生的原因？
+     * A: 单看任意一个线程，该线程的所有操作之间都是有序的，这个应该能理解。
+     * 但是出现多个线程执行该代码块时：
+     * 1. 所有的非EventLoop线程的操作会进入同一个队列，因此所有的非EventLoop线程之间的操作是有序的！
+     * 2. 但是EventLoop线程是直接执行的，并没有进入队列，它是插队执行的。
+     * 它有时候是无害的，有时候则可能有害的，因此需要慎重使用！
      *
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */

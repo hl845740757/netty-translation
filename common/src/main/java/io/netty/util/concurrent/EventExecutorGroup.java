@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * EventExecutorGroup 与 EventExecutor 之间的关系就是容器与容器内的元素这样的关系。
  * 可以看做是设计模式中的组合模式的，EventExecutorGroup 既是顶层的 Component，也是容器节点，而EventExecutor是叶子节点。
  *
- * 在Netty的设计中：带Group/Multi的是线程(容器)，而不带的基本都是单线程(执行单元)。
+ * 在Netty的设计中：带Group/Multi的是多线程(容器)，而不带的基本都是单线程(执行单元)。
  * {@link EventExecutorGroup}就是多线程的顶层接口，{@link EventExecutor}就是单线程的顶层接口。
  *
  * The {@link EventExecutorGroup} is responsible for providing the {@link EventExecutor}'s to use

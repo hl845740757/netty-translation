@@ -760,7 +760,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      *
      * 我的实现大致如下：
      * <pre>{@code
-     *         boolean interrupted = Thread.interrupted();
+     *         boolean interrupted = false;
      *         final long endTime = System.nanoTime() + unit.toNanos(timeout);
      *         try {
      *             synchronized (this) {

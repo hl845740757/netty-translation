@@ -42,6 +42,8 @@ public abstract class AbstractReferenceCounted implements ReferenceCounted {
      * 当前引用计数，之前的版本好像就是真实计数，1就是1，初始就是1。
      * 好像是为了解决溢出问题变成现在的位移版本了。不知道什么情况下会导致引用计数溢出。。。
      * 搞得复杂度高了不少。
+     * 偶数： 真实计数为 refCnt >>> 1
+     * 奇数： 真实计数为 0
      */
     // even => "real" refcount is (refCnt >>> 1); odd => "real" refcount is 0
     @SuppressWarnings("unused")
@@ -68,7 +70,7 @@ public abstract class AbstractReferenceCounted implements ReferenceCounted {
      * @return 真实计数
      */
     private static int realRefCnt(int rawCnt) {
-        // 如果最后一位是1，表示引用计数为0，否则右移一位得到真实计数。
+        // 如果最后一位是1（奇数），表示引用计数为0，否则右移一位得到真实计数。
         return (rawCnt & 1) != 0 ? 0 : rawCnt >>> 1;
     }
 
