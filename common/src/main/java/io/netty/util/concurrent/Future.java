@@ -81,7 +81,12 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
      * 添加一个监听者到当前Future。传入的特定的Listener将会在Future计算完成时{@link #isDone() true}被通知。
      * 如果当前Future已经计算完成，那么将立即被通知。
      * 注意：监听器运行在Future默认的通知线程中，你的监听器实现需要保证线程安全性。
-     * (不能指定监听器的运行环境是Netty涉及中的一个缺陷，我自己的实现中对其做了支持)
+     * <p>
+     * Q: 时序问题。
+     * A: Netty的future不能指定回调的执行环境，主要为了保证<b>回调执行的时序</b>，先添加的先执行，后添加的后执行。
+     * <p>
+     * 扩展：一旦允许指定监听器的执行环境，那么回调的执行可能将是无序的(要变成有序的开销太高)。
+     * eg: 在future完成前添加的回调可能在目标线程的任务队列中等待执行，而future完成时新添加的回调，会立即执行，就会产生时序问题。
      *
      * Adds the specified listener to this future.  The
      * specified listener is notified when this future is
