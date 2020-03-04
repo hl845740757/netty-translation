@@ -513,9 +513,14 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         notifyListenerWithStackOverFlowProtection(eventExecutor, future, listener);
     }
 
+    /**
+     * 通知所有的监听器
+     * 它保证了通知的顺序，禁止了并发通知
+     */
     private void notifyListeners() {
         EventExecutor executor = executor();
         if (executor.inEventLoop()) {
+            // 当前在通知线程下，尝试立即通知监听器
             final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
             final int stackDepth = threadLocals.futureListenerStackDepth();
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
@@ -529,6 +534,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             }
         }
 
+        // 如果当前不在通知线程，则需要进入通知线程才可以进行通知
+        // 或当前栈深度较深，放入队列稍后执行
         safeExecute(executor, new Runnable() {
             @Override
             public void run() {
