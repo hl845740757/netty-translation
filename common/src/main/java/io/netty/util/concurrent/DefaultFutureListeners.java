@@ -15,11 +15,14 @@
  */
 package io.netty.util.concurrent;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * FutureListener的容器，当超过一个Listener进行监听时，使用该对象将它们聚合起来，方便统一管理。
- * 这个优化我个人没有觉得特别的好。
+ * FutureListener的容器。
+ * Q: 主要解决什么问题？
+ * A: 主要解决扩容问题，不使用{@link ArrayList}，是因为@link ArrayList}默认扩容50%，初始容量较小的话，扩容过于频繁 - 2，3，4，6，9。
+ * 而这里是扩一倍，对于小容量容器来说，更为友好。
  */
 final class DefaultFutureListeners {
     /**
@@ -44,10 +47,10 @@ final class DefaultFutureListeners {
         size = 2;
         // 该类型需要进行额外的处理
         if (first instanceof GenericProgressiveFutureListener) {
-            progressiveSize ++;
+            progressiveSize++;
         }
         if (second instanceof GenericProgressiveFutureListener) {
-            progressiveSize ++;
+            progressiveSize++;
         }
     }
 
@@ -62,29 +65,30 @@ final class DefaultFutureListeners {
 
         // 如果是GenericProgressiveFutureListener类型的监听器，则对应计数加1
         if (l instanceof GenericProgressiveFutureListener) {
-            progressiveSize ++;
+            progressiveSize++;
         }
     }
 
     /**
      * 移除一个监听器
+     *
      * @param l 要移除的监听器
      */
     public void remove(GenericFutureListener<? extends Future<?>> l) {
         final GenericFutureListener<? extends Future<?>>[] listeners = this.listeners;
         int size = this.size;
-        for (int i = 0; i < size; i ++) {
+        for (int i = 0; i < size; i++) {
             if (listeners[i] == l) {
                 int listenersToMove = size - i - 1;
                 if (listenersToMove > 0) {
                     System.arraycopy(listeners, i + 1, listeners, i, listenersToMove);
                 }
-                listeners[-- size] = null;
+                listeners[--size] = null;
                 this.size = size;
 
                 // 如果是GenericProgressiveFutureListener类型的监听器，则对应计数减1
                 if (l instanceof GenericProgressiveFutureListener) {
-                    progressiveSize --;
+                    progressiveSize--;
                 }
                 return;
             }
