@@ -70,7 +70,10 @@ public interface EventExecutor extends EventExecutorGroup {
      * 1. 所有的非EventLoop线程的操作会进入同一个队列，因此所有的非EventLoop线程之间的操作是有序的！
      * 2. 但是EventLoop线程是直接执行的，并没有进入队列，它是插队执行的。
      * 它有时候是无害的，有时候则可能有害的，因此需要慎重使用！
-     *
+     * <p>
+     * 这里我要批评下这个方法放的位置，这个方法放在{@link EventExecutor}接口下，带来的混乱甚至超过好处，它更适合定义在{@code EventLoop}下。
+     * 即使按照{@link io.netty.util.ReferenceCountUtil}类中使用 instanceOf 和 inEventLoop判断，都会更好点。
+     * <p>
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */
     boolean inEventLoop();
