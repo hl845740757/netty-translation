@@ -76,6 +76,10 @@ public interface EventExecutor extends EventExecutorGroup {
      * 2. 该方法可以有效减少提交的任务数，可以提高性能。
      * 3. 该方法可能导致时序问题(风险很高)。
      *
+     * 这里我要批评下这个方法放的位置，这个方法放在{@link EventExecutor}接口下，带来的混乱甚至超过好处，它更适合定义在{@code EventLoop}下。
+     * 即使按照{@link io.netty.util.ReferenceCountUtil}类中使用 instanceOf 和 inEventLoop判断，都会更好点。
+     * 
+     * <p>
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */
     boolean inEventLoop();

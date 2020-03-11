@@ -223,6 +223,8 @@ public interface Future<V> extends java.util.concurrent.Future<V> {
     boolean awaitUninterruptibly(long timeoutMillis);
 
     /**
+     * 这个方法的命名不好，其更确切的名字是{@code getNowIfSuccess}。
+     *
      * 尝试非阻塞的获取当前结果，当前仅当任务正常完成时返回期望的结果，否则返回null，即：
      * 1. 如果future关联的task还未完成 {@link #isDone() false}，则返回null。
      * 2. 如果任务被取消或失败，则返回null。
