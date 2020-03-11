@@ -69,7 +69,12 @@ public interface EventExecutor extends EventExecutorGroup {
      * 但是出现多个线程执行该代码块时：
      * 1. 所有的非EventLoop线程的操作会进入同一个队列，因此所有的非EventLoop线程之间的操作是有序的！
      * 2. 但是EventLoop线程是直接执行的，并没有进入队列，它是插队执行的。
-     * 它有时候是无害的，有时候则可能有害的，因此需要慎重使用！
+     * 它有时候是无害的，有时候则可能有害的，对于有时序要求的操作，一定要慎重！
+     *
+     * <h3>inEventLoop的得与失</h3>
+     * 1. 该方法可以用来保护数据，检测错误的访问。
+     * 2. 该方法可以有效减少提交的任务数，可以提高性能。
+     * 3. 该方法可能导致时序问题(风险很高)。
      *
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */

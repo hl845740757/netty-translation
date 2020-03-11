@@ -515,7 +515,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
 
     /**
      * 通知所有的监听器
-     * 它保证了通知的顺序，禁止了并发通知
+     * 关于为什么要在{@link #executor}线程下才通知监听器，请查看{@link #notifyListenersNow()}方法
      */
     private void notifyListeners() {
         EventExecutor executor = executor();
@@ -535,7 +535,6 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         }
 
         // 如果当前不在通知线程，则需要进入通知线程才可以进行通知
-        // 或当前栈深度较深，放入队列稍后执行
         safeExecute(executor, new Runnable() {
             @Override
             public void run() {
@@ -545,6 +544,8 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
     }
 
     /**
+     * 关于为什么要在{@link #executor}线程下才通知监听器，请查看{@link #notifyListenersNow()}方法
+     *
      * The logic in this method should be identical to {@link #notifyListeners()} but
      * cannot share code because the listener(s) cannot be cached for an instance of {@link DefaultPromise} since the
      * listener(s) may be changed and is protected by a synchronized operation.
@@ -574,6 +575,13 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
         });
     }
 
+    /**
+     * 立即通知所有的监听器 - 这段代码其实是单线程执行的，不会并发的执行。
+     *
+     * Q: 为什么要在绑定的{@link #executor}线程下才通知监听器？
+     * A: 在Netty的监听器实现里，主要是减少任务数量。如果每一个监听器都通过提交任务的形式提交到{@link #executor}下执行，
+     * 那么可能产生大量的任务，会影响性能，和增加延迟。
+     */
     private void notifyListenersNow() {
         // 用于拉取最新的监听器，避免长时间的占有锁
         Object listeners;
