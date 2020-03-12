@@ -86,7 +86,6 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      * 如果它为null，存在两种情况：
      * 1.还没有监听器添加到该promise。
      * 2.所有的监听器都已经被通知了。（也就是说在通知完毕和移除某个监听器后，如果size为0，那么会置为null）
-     * Netty的这个实现我没有深入的研究，我个人实现的时候使用了LinkedList...
      *
      * 线程安全 - 通过synchronized(this)保护。我们必须支持在没有{@link EventExecutor}时添加监听器。
      *
@@ -524,6 +523,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
             final int stackDepth = threadLocals.futureListenerStackDepth();
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
+                // 堆栈保护
                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
                 try {
                     notifyListenersNow();
@@ -557,6 +557,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
             final int stackDepth = threadLocals.futureListenerStackDepth();
             if (stackDepth < MAX_LISTENER_STACK_DEPTH) {
+                // 堆栈保护
                 threadLocals.setFutureListenerStackDepth(stackDepth + 1);
                 try {
                     notifyListener0(future, listener);
@@ -591,7 +592,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
             if (notifyingListeners || this.listeners == null) {
                 return;
             }
-            // 标记为正在通知(每一个正在通知的线程都会将所有的监听器通知一遍)
+            // 标记为正在通知(每一次通知都会将当前所有的监听器通知一遍)
             notifyingListeners = true;
             listeners = this.listeners;
             this.listeners = null;
@@ -702,7 +703,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      * @return 如果赋值成功，则返回true，否则返回false。
      */
     private boolean setValue0(Object objResult) {
-        // 正常金乌完成状态，可以是从初始状态进入完成状态，也可以是从不可取消状态变为完成状态
+        // 正常完成状态，可以是从初始状态进入完成状态，也可以是从不可取消状态变为完成状态
         if (RESULT_UPDATER.compareAndSet(this, null, objResult) ||
             RESULT_UPDATER.compareAndSet(this, UNCANCELLABLE, objResult)) {
 
@@ -783,8 +784,7 @@ public class DefaultPromise<V> extends AbstractFuture<V> implements Promise<V> {
      *                     // 获取锁需要时间，因此应该在获取锁之后计算剩余时间
      *                     final long remainNano = endTime - System.nanoTime();
      *                     if (remainNano <= 0) {
-     *                          // 再尝试一下
-     *                         return isDone();
+     *                         return false;
      *                     }
      *                     incWaiters();
      *                     try {
