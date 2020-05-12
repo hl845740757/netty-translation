@@ -21,6 +21,9 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
+ * 实践体验：如果是JDK8及以上，建议使用JDK的{@link java.util.concurrent.CompletableFuture}，可以构建异步操作管道，
+ * 极大的简化编程难度，如果JDK8一下，建议使用Guava的{@code Futures}构建异步管道。不建议依赖Netty的Future。
+ *
  * Future通常代表的是异步的、支持取消的、可获取执行结果的任务的凭证（Future是并发模式中的一种）。
  *
  * 1.简单的Future模式是没有回调的，如JDK的Future。无回调的Future简单安全。
@@ -30,16 +33,6 @@ import java.util.concurrent.TimeUnit;
  *
  * 3.添加回调机制其实就是观察者模式，涉及到使用观察者模式和不使用观察者模式的优劣议题。不使用观察者模式，就需要使用轮询的方式
  * 去获取类似的功能，其缺点是：轮询间隔时间过长；则响应性低，若轮询时间过短，则消耗大量的CPU资源。
- *
- *  怎么设计以及使用都需要仔细斟酌,毕竟有得必有失。
- * (简单一般容易保证安全性，对开发者要求不高。便捷的方法往往潜在着危险，对开发者素质要求较高。)
- *
- * JDK的Future最大的问题就是不知道任务何时完成。{@link java.util.concurrent.CompletableFuture}接口又不是那么的好用（API过多）。
- * Netty对JDK的Future进行了扩展，添加了事件完成的回调机制。Netty也推荐大家使用回调机制监听计算的完成事件，此外还提供了一些方便开发者使用的接口。
- * Netty的监听器实现的不友好的一点是不能指定监听器运行的环境。 缺少这样的方法{@code addListener(FutureListener, Executor)}支持（需要自己进行封装）。
- *
- * Netty的Future实现了流式语法，方法返回{@link Future}的都是返回的this，并发组件实现这个还是有点不容易的，因为涉及大量的子类重写这些方法，
- * 一旦某个子类重写未按规则来，就GG了。
  *
  * The result of an asynchronous operation.
  */

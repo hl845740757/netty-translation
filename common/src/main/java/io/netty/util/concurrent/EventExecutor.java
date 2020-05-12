@@ -78,7 +78,12 @@ public interface EventExecutor extends EventExecutorGroup {
      *
      * 这里我要批评下这个方法放的位置，这个方法放在{@link EventExecutor}接口下，带来的混乱甚至超过好处，它更适合定义在{@code EventLoop}下。
      * 即使按照{@link io.netty.util.ReferenceCountUtil}类中使用 instanceOf 和 inEventLoop判断，都会更好点。
-     * 
+     *
+     * 这里我要批评下{@link ImmediateEventExecutor}，它的{@code inEventLoop}总是返回true，是一大坑。
+     * 如果{@code inEventLoop}返回true，直接理解上，会认为它会在一个特定的线程，但是{@link ImmediateEventExecutor}却破坏了该假设。
+     * 它不应该存在，需要立即执行的地方使用{@link ImmediateExecutor}即可。
+     * {@link ImmediateEventExecutor}的时序错误，归根结底还是该方法放的位置不对。
+     *
      * <p>
      * Calls {@link #inEventLoop(Thread)} with {@link Thread#currentThread()} as argument
      */

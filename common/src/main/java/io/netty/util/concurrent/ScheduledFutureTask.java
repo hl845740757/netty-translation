@@ -64,6 +64,7 @@ final class ScheduledFutureTask<V> extends PromiseTask<V> implements ScheduledFu
      * （相对时间戳，相对于{@link #START_TIME}的时间戳）
      * 它不是volatile的，导致{@link #getDelay(TimeUnit)}会出现线程安全问题(其它线程可能无法获取到真实延迟)。
      * 不是volatile的可以提高排序顺序，减少消耗。
+     * JDK11{@link java.util.concurrent.ScheduledExecutorService}中已经是volatile变量了，之前也不是volatile。
      */
     private long deadlineNanos;
 

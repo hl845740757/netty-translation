@@ -19,6 +19,8 @@ import java.util.concurrent.Executor;
 
 /**
  * 立即执行的Executor。它的实现方式就是调用者执行，直接调用 Runnable的run()方法。
+ * 类似实现如:{@code DirectTExecutor}。
+ *
  * 它和{@link ImmediateEventExecutor}的区别是，如果有正在执行的任务，{@link ImmediateExecutor}会立即执行提交的任务，
  * 而{@link ImmediateEventExecutor}会先将新任务压入队列。
  *

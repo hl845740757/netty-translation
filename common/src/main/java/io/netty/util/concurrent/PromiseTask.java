@@ -21,34 +21,6 @@ import java.util.concurrent.RunnableFuture;
 /**
  * 该类的含义可对比{@link java.util.concurrent.FutureTask}
  * 它既是Promise，也是Task，所有的结果都应该由自己赋值，不允许外部进行赋值操作。
- * <p>
- * 这里我要批评下这里的实现，这里继承{@link DefaultPromise}简直不能再糟糕了，它本不需要实现{@link Promise}接口，
- * 它本身只需要实现{@link Future}和{@link RunnableFuture}接口。
- * 使用{@link EventExecutor#newPromise()}创建一个{@link Promise}，通过代理{@link Promise}的部分方法实现接口，
- * 要好的多。
- *
- * <pre>{@code
- *
- * protected final Promise promise;
- * protected final Callable task;
- *
- * PromiseTask(EventExecutor executor, Callable<V> callable) {
- *      promise = executor.newPromise();
- *      task = callable;
- *     }
- *
- * public void run() {
- *      try{
- *          if(promise.setUncancellable()) {
- *              V result = task.call();
- *              promise.trySuccess(result);
- *          }
- *      } catch(Throwable e) {
- *          promise.tryFailure(e);
- *      }
- * }
- * }
- * </pre>
  *
  * @param <V>
  */

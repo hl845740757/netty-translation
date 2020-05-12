@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import static io.netty.util.internal.StringUtil.simpleClassName;
 
 /**
+ * 基于时间轮算法的定时器 - 可以百度/Google一下，性能很高，也很适合游戏使用，不过游戏使用单线程的即可。
+ *
  * A {@link Timer} optimized for approximated I/O timeout scheduling.
  *
  * <h3>Tick Duration</h3>
@@ -104,12 +106,16 @@ public class HashedWheelTimer implements Timer {
     private final long tickDuration;
     private final HashedWheelBucket[] wheel;
     private final int mask;
+
     private final CountDownLatch startTimeInitialized = new CountDownLatch(1);
     private final Queue<HashedWheelTimeout> timeouts = PlatformDependent.newMpscQueue();
     private final Queue<HashedWheelTimeout> cancelledTimeouts = PlatformDependent.newMpscQueue();
     private final AtomicLong pendingTimeouts = new AtomicLong(0);
     private final long maxPendingTimeouts;
 
+    /**
+     * 启动时间
+     */
     private volatile long startTime;
 
     /**
@@ -223,12 +229,19 @@ public class HashedWheelTimer implements Timer {
      * @param threadFactory        a {@link ThreadFactory} that creates a
      *                             background {@link Thread} which is dedicated to
      *                             {@link TimerTask} execution.
+     *
      * @param tickDuration         the duration between tick
+     *                             tick的间隔，也就是指针多久转动一个刻度
+     *
      * @param unit                 the time unit of the {@code tickDuration}
+     *
      * @param ticksPerWheel        the size of the wheel
+     *                             刻度盘的大小，转一圈需要多少个tick，它限制了精度。此外，为了高效运算，会转为2的幂，使用掩码计算。
+     *
      * @param leakDetection        {@code true} if leak detection should be enabled always,
      *                             if false it will only be enabled if the worker thread is not
      *                             a daemon thread.
+     *
      * @param  maxPendingTimeouts  The maximum number of pending timeouts after which call to
      *                             {@code newTimeout} will result in
      *                             {@link java.util.concurrent.RejectedExecutionException}
@@ -248,6 +261,7 @@ public class HashedWheelTimer implements Timer {
         if (unit == null) {
             throw new NullPointerException("unit");
         }
+
         if (tickDuration <= 0) {
             throw new IllegalArgumentException("tickDuration must be greater than 0: " + tickDuration);
         }
@@ -255,8 +269,10 @@ public class HashedWheelTimer implements Timer {
             throw new IllegalArgumentException("ticksPerWheel must be greater than 0: " + ticksPerWheel);
         }
 
+        // 刻度盘，每个刻度为一个hash桶，每个桶上为一个双向列表，维护了所有的定时器
         // Normalize ticksPerWheel to power of two and initialize the wheel.
         wheel = createWheel(ticksPerWheel);
+        // 刻度盘的mask，代替取余操作，也就要求了刻度必须为2的幂
         mask = wheel.length - 1;
 
         // Convert tickDuration to nanos.
@@ -269,6 +285,7 @@ public class HashedWheelTimer implements Timer {
                     tickDuration, Long.MAX_VALUE / wheel.length));
         }
 
+        // tick间隔保护，限制为最低1毫秒，避免占用过多CPU
         if (duration < MILLISECOND_NANOS) {
             if (logger.isWarnEnabled()) {
                 logger.warn("Configured tickDuration %d smaller then %d, using 1ms.",
@@ -285,6 +302,7 @@ public class HashedWheelTimer implements Timer {
 
         this.maxPendingTimeouts = maxPendingTimeouts;
 
+        // 实例数检测：由于时间轮算法会占用较多资源，因此实例数目不能太高
         if (INSTANCE_COUNTER.incrementAndGet() > INSTANCE_COUNT_LIMIT &&
             WARNED_TOO_MANY_INSTANCES.compareAndSet(false, true)) {
             reportTooManyInstances();
@@ -314,7 +332,10 @@ public class HashedWheelTimer implements Timer {
                     "ticksPerWheel may not be greater than 2^30: " + ticksPerWheel);
         }
 
+        // 将刻度盘转为2的幂，方便与操作
         ticksPerWheel = normalizeTicksPerWheel(ticksPerWheel);
+
+        // 初始化hash桶(刻度盘)
         HashedWheelBucket[] wheel = new HashedWheelBucket[ticksPerWheel];
         for (int i = 0; i < wheel.length; i ++) {
             wheel[i] = new HashedWheelBucket();
@@ -352,6 +373,7 @@ public class HashedWheelTimer implements Timer {
                 throw new Error("Invalid WorkerState");
         }
 
+        // 等待工作线程启动
         // Wait until the startTime is initialized by the worker.
         while (startTime == 0) {
             try {
@@ -365,6 +387,7 @@ public class HashedWheelTimer implements Timer {
     @Override
     public Set<Timeout> stop() {
         if (Thread.currentThread() == workerThread) {
+            // 走到这里表示某个人物尝试关闭时间轮，会导致该时间轮上的其它定时器受到影响
             throw new IllegalStateException(
                     HashedWheelTimer.class.getSimpleName() +
                             ".stop() cannot be called from " +
